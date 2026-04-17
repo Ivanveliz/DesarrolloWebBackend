@@ -1,24 +1,30 @@
-const express = require('express');
-require('dotenv').config();
+const express = require("express");
+const methodOverride = require("method-override");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const employeeRoutes = require('./routes/employeeRoutes');
+// Import de rutas
+const employeeRoutes = require("./routes/employeeRoutes");
+const pedidoRoutes = require("./routes/pedidoRoutes");
 
-//esto es por que si no no anda el delete
+// motor de plantillas (Pug)
+app.set("view engine", "pug");
+app.set("views", "./views");
 
-const methodOverride = require('method-override');
-
-app.set('view engine', 'pug');
-app.set('views', './views');
-
-//middlewares
+// --- Middlewares ---
 app.use(express.json());
+// middleware para procesar datos de formularios (Pug)
 app.use(express.urlencoded({ extended: true }));
-app.use(methodOverride('_method'));
-app.use('/', employeeRoutes);
+// Esto es porque si no no anda el delete (necesario para formularios Pug)
+app.use(methodOverride("_method"));
 
-app.listen(PORT, () => {
-    console.log(`Servidor Express corriendo en http://localhost:${PORT}/`);
+// --- Rutas ---
+app.use("/", employeeRoutes);
+app.use("/pedidos", pedidoRoutes);
+
+app.listen(PORT, function() {
+    console.log("Servidor corriendo en http://localhost:" + PORT + "/");
+    console.log("Modulo de pedidos activo en http://localhost:" + PORT + "/pedidos");
 });
