@@ -1,0 +1,25 @@
+doctype html
+html(lang="es")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Panadería - Gestión de Empleados
+    
+    //Libreria de estilos para no escribir css
+  
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css")
+
+    
+    style.
+      .actions-col { white-space: nowrap; width: 1%; }
+      .actions-col form { display: inline-block; margin-bottom: 0; }
+      .actions-col a { margin-right: 0.5rem; }
+  body
+    main.container
+      h1 Panadería "El Sol"
+      nav
+        ul
+          li: a(href="/")  Lista de Empleados
+          li: a(href="/nuevo", role="button", class="outline") + Nuevo Empleado
+      
+      block content

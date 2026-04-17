@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "nombre": "Medialuna de manteca",
+    "precio": 300,
+    "categoria": "Facturas",
+    "stock": 100
+  },
+  {
+    "id": 2,
+    "nombre": "Pan Francés (1kg)",
+    "precio": 1200,
+    "categoria": "Panadería",
+    "stock": 30
+  },
+  {
+    "id": 3,
+    "nombre": "Torta Selva Negra",
+    "precio": 15000,
+    "categoria": "Pastelería",
+    "stock": 5
+  },
+  {
+    "id": 4,
+    "nombre": "Cañoncito de dulce de leche",
+    "precio": 400,
+    "categoria": "Facturas",
+    "stock": 50
+  }
+]

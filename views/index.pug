@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  h2 Empleados Actuales
+  if employees.length === 0
+    p No hay empleados registrados todavía. Anímate a crear uno.
+  else
+    figure
+      table
+        thead
+          tr
+            th ID
+            th Nombre y Apellido
+            th DNI
+            th Puesto
+            th Turno
+            th Acciones
+        tbody
+          each emp in employees
+            tr
+              td= emp.id
+              td #{emp.name} #{emp.surname}
+              td= emp.dni
+              td= emp.role
+              td= emp.shift
+              td.actions-col
+                a(href=`/${emp.id}/editar`, role="button", class="secondary outline") Editar
+
+                //- Al apretar el botón, esto envía un método DELETE procesado por method-override
+                
+                form(action=`/${emp.id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Seguro que deseas eliminar a este empleado?');")
+                  button(type="submit", class="outline contrast") Borrar

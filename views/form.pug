@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  h2= isEdit ? 'Editar Empleado' : 'Registrar Nuevo Empleado'
+  
+  //- Si isEdit es tru enviará método PUT para actualizar, sino POST para crear
+  - const actionUrl = isEdit ? `/${employee.id}?_method=PUT` : '/'
+  
+  form(action=actionUrl, method="POST")
+    div.grid
+      label Nombre
+        input(type="text", name="name", required, value=(isEdit ? employee.name : ''))
+      
+      label Apellido
+        input(type="text", name="surname", required, value=(isEdit ? employee.surname : ''))
+    
+    label Documento (DNI)
+      input(type="text", name="dni", required, value=(isEdit ? employee.dni : ''))
+      
+    div.grid
+      label Puesto
+        input(type="text", name="role", required, placeholder="Ej: Cajero, Pastelero...", value=(isEdit ? employee.role : ''))
+        
+      label Turno
+        select(name="shift", required)
+          option(value="", disabled, selected=!isEdit) Selecciona un turno
+          option(value="Mañana", selected=(isEdit && employee.shift === 'Mañana')) Mañana
+          option(value="Tarde", selected=(isEdit && employee.shift === 'Tarde')) Tarde
+          option(value="Noche", selected=(isEdit && employee.shift === 'Noche')) Noche
+          
+    button(type="submit")= isEdit ? 'Guardar Cambios' : 'Crear Empleado'
+    a(href="/", role="button", class="secondary outline", style="margin-left: 1rem;") Cancelar
