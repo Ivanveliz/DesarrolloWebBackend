@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "franquiciaId": 1,
+    "productos": [
+      {
+        "productoId": 10,
+        "cantidad": 50
+      },
+      {
+        "productoId": 12,
+        "cantidad": 20
+      }
+    ],
+    "estado": "pendiente",
+    "fecha": "2026-04-17T02:15:08.626Z"
+  }
+]

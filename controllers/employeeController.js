@@ -1,5 +1,5 @@
 const Employee = require('../models/Employee');
-const data = require('../bbdd.json');
+const data = require('../config/bbdd.json');
 
 let employees = data.map(
     emp => new Employee(emp.id, emp.name, emp.surname, emp.dni, emp.role, emp.shift)
