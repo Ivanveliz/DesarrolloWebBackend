@@ -11,7 +11,7 @@ const {
 } = require('../controllers/pedidoController');
 
 // Definimos las rutas y las enlazamos con su respectivo controlador
-router.get('/', getAllPedidos);           
+router.get("/", getAllPedidos);          
 router.get('/:id', getPedidoById);       
 
 router.post('/', createPedido);          

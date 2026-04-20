@@ -1,0 +1,22 @@
+/* Estilos para el estado de los pedidos */
+
+.pendiente {
+  color: #bd9e41;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.aprobado {
+  color: rgb(16, 136, 22);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.cancelado {
+  color: rgb(138, 21, 21);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+}

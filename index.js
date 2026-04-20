@@ -5,6 +5,8 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(express.static("public"));
+
 // Import de rutas
 const employeeRoutes = require("./routes/employeeRoutes");
 const pedidoRoutes = require("./routes/pedidoRoutes");

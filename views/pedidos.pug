@@ -1,0 +1,24 @@
+extends layout
+
+block content
+  h2 Pedidos
+
+  table
+    thead
+      tr
+        th ID
+        th Franquicia
+        th Estado
+        th Fecha
+        th Productos
+
+    tbody
+      each pedido in pedidos
+        tr
+          td= pedido.id
+          td= pedido.franquiciaId
+          td(class=pedido.estado)= pedido.estado
+          td= pedido.fecha
+
+          td
+            button(type="button", onclick=`location.href='/pedidos/${pedido.id}'`) Ver productos

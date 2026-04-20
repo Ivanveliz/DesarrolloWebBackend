@@ -5,10 +5,10 @@ html(lang="es")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Panadería - Gestión de Empleados
     
-    //Libreria de estilos para no escribir css
+    //Libreria de estilos para no escribir mucho css
   
     link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css")
-
+    link(rel="stylesheet", href="/css/styles.css")
     
     style.
       .actions-col { white-space: nowrap; width: 1%; }
@@ -21,5 +21,6 @@ html(lang="es")
         ul
           li: a(href="/")  Lista de Empleados
           li: a(href="/nuevo", role="button", class="outline") + Nuevo Empleado
+          li: a(href="/pedidos") Pedidos
       
       block content

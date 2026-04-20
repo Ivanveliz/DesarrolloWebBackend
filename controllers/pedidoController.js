@@ -1,12 +1,13 @@
 const Pedido = require('../models/Pedido');
+const productos = require('../config/productos.json');
 
 // READ ALL
 const getAllPedidos = (req, res) => {
     try {
         const pedidos = Pedido.getAll();
-        res.status(200).json(pedidos);
+        res.render("pedidos", { pedidos });
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).send("Internal server error");
     }
 };
 
@@ -14,10 +15,27 @@ const getAllPedidos = (req, res) => {
 const getPedidoById = (req, res) => {
     try {
         const pedido = Pedido.getById(req.params.id);
+
         if (!pedido) {
             return res.status(404).json({ error: "Order not found" });
         }
-        res.status(200).json(pedido);
+
+        const productosDetallados = pedido.productos.map(item => {
+            const producto = productos.find(p => p.id === item.productoId);
+
+            return {
+                nombre: producto ? producto.nombre : "Desconocido",
+                cantidad: item.cantidad
+            };
+        });
+
+        const pedidoFinal = {
+            ...pedido,
+            productos: productosDetallados
+        };
+
+        res.json(pedidoFinal);
+
     } catch (error) {
         res.status(500).json({ error: "Internal server error" });
     }
