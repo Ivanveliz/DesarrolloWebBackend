@@ -1,4 +1,55 @@
 [
+
+ {
+    "id": 1,
+    "franquiciaId": 1,
+    "productos": [
+      {
+        "productoId": 4,
+        "cantidad": 10
+      },
+      {
+        "productoId": 2,
+        "cantidad": 25
+      }
+    ],
+    "estado": "pendiente",
+    "fecha": "2026-04-17T02:15:08.626Z"
+  },
+  {
+    "id": 2,
+    "franquiciaId": 2,
+    "productos": [
+      {
+        "productoId": 4,
+        "cantidad": 10
+      },
+      {
+        "productoId": 2,
+        "cantidad": 25
+      }
+    ],
+    "estado": "pendiente",
+    "fecha": "2026-04-17T02:15:08.626Z"
+  },
+
+  {
+    "id": 3,
+    "franquiciaId": 2,
+    "productos": [
+      {
+        "productoId": 4,
+        "cantidad": 10
+      },
+      {
+        "productoId": 2,
+        "cantidad": 25
+      }
+    ],
+    "estado": "pendiente",
+    "fecha": "2026-04-17T02:15:08.626Z"
+  },
+
   {
     "id": 3,
     "franquiciaId": 2,
@@ -52,11 +103,11 @@
     "franquiciaId": 1,
     "productos": [
       {
-        "productoId": 11,
+        "productoId": 1,
         "cantidad": 22
       },
       {
-        "productoId": 6,
+        "productoId": 2,
         "cantidad": 45
       }
     ],
