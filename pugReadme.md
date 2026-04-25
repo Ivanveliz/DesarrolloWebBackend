@@ -1,4 +1,4 @@
-# 🐶 Guía Rápida para Entender PUG
+#  Guía Rápida para Entender PUG
 
 **Pug** (anteriormente conocido como *Jade*) no es un lenguaje de programación nuevo, es simplemente un **Motor de Plantillas**. Su único trabajo en el universo es agarrar la sintaxis resumida que tú escribes y, milisegundos antes de enviársela al navegador, **compilarla y transformarla en HTML5 puro**.
 

@@ -7,9 +7,30 @@ let employees = data.map(
 
 const getAllEmployees = (req, res) => {
     try {
-        res.render('index', { employees });
+        res.format({
+            'application/json': () => res.status(200).json({ employees }),
+            'text/html': () => res.render('index', { employees })
+        });
     } catch (error) {
         res.status(500).send('Error interno del servidor al obtener empleados');
+    }
+};
+
+const getEmployeeById = (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const employee = employees.find(emp => emp.id === id);
+
+        if (!employee) {
+            return res.status(404).json({ error: 'Empleado no encontrado' });
+        }
+
+        res.format({
+            'application/json': () => res.json(employee),
+            'text/html': () => res.send(`<h1>Perfil del Empleado</h1><pre>${JSON.stringify(employee, null, 2)}</pre>`)
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error interno al obtener el empleado' });
     }
 };
 
@@ -40,8 +61,10 @@ const createEmployee = (req, res) => {
 
         employees.push(newEmployee);
 
-
-        res.redirect('/');
+        res.format({
+            'application/json': () => res.status(201).json(newEmployee),
+            'text/html': () => res.redirect('/')
+        });
     } catch (error) {
         res.status(500).send('Error interno del servidor al crear el empleado');
     }
@@ -60,7 +83,10 @@ const updateEmployee = (req, res) => {
         const { name, surname, dni, role, shift } = req.body;
         employees[index] = new Employee(id, name, surname, dni, role, shift);
 
-        res.redirect('/');
+        res.format({
+            'application/json': () => res.status(200).json(employees[index]),
+            'text/html': () => res.redirect('/')
+        });
     } catch (error) {
         res.status(500).send('Error al actualizar');
     }
@@ -77,7 +103,10 @@ const deleteEmployee = (req, res) => {
         }
 
         employees.splice(index, 1);
-        res.redirect('/');
+        res.format({
+            'application/json': () => res.status(204).send(),
+            'text/html': () => res.redirect('/')
+        });
     } catch (error) {
         res.status(500).send('Error al eliminar');
     }
@@ -88,6 +117,7 @@ const deleteEmployee = (req, res) => {
 
 module.exports = {
     getAllEmployees,
+    getEmployeeById,
     renderNewForm,
     renderEditForm,
     createEmployee,

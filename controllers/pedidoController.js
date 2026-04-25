@@ -5,7 +5,10 @@ const productos = require('../config/productos.json');
 const getAllPedidos = (req, res) => {
     try {
         const pedidos = Pedido.getAll();
-        res.render("pedidos", { pedidos });
+        res.format({
+            'application/json': () => res.json(pedidos),
+            'text/html': () => res.render("pedidos", { pedidos })
+        });
     } catch (error) {
         res.status(500).send("Internal server error");
     }

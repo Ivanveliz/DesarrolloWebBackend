@@ -1,6 +1,8 @@
 const express = require("express");
 const methodOverride = require("method-override");
 require("dotenv").config();
+const rutasViewsFile = require("./routes/routesViews");
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
 // --- Rutas ---
+app.use("/", rutasViewsFile);
 app.use("/", employeeRoutes);
 app.use("/pedidos", pedidoRoutes);
 
