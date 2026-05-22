@@ -16,17 +16,17 @@ block content
             th Turno
             th Acciones
         tbody
-          each emp in employees
+          each emp, index in employees
             tr
-              td= emp.id
+              td= index + 1
               td #{emp.name} #{emp.surname}
               td= emp.dni
               td= emp.role
               td= emp.shift
               td.actions-col
-                a(href=`/${emp.id}/editar`, role="button", class="secondary outline") Editar
+                a(href=`/${emp._id}/editar`, role="button", class="secondary outline") Editar
 
                 //- Al apretar el botón, esto envía un método DELETE procesado por method-override
                 
-                form(action=`/${emp.id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Seguro que deseas eliminar a este empleado?');")
+                form(action=`/${emp._id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Estás seguro de que deseas eliminar este empleado?');")
                   button(type="submit", class="outline contrast") Borrar

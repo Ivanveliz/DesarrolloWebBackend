@@ -1,0 +1,49 @@
+extends layout
+
+block content
+  h2 Franquicias
+
+  a(href="/franquicias/nuevo?role=admin", role="button", class="outline")
+    | + Nueva Franquicia
+
+  if franquicias.length === 0
+    p No hay franquicias registradas.
+
+  else
+    table
+      thead
+        tr
+          th ID
+          th Razón Social
+          th CUIT
+          th Localidad
+          th Encargado
+          th Teléfono
+          th Acciones
+
+      tbody
+        each franquicia, index in franquicias
+          tr
+            td= index + 1
+            td= franquicia.razonSocial
+            td= franquicia.cuit
+            td= franquicia.localidad
+            td= franquicia.encargado
+            td= franquicia.telefono
+
+            td.actions-col
+
+              a(
+                href=`/franquicias/${franquicia._id}/editar?role=admin`,
+                role="button",
+                class="secondary outline"
+              ) Editar
+
+              form(
+                action=`/franquicias/${franquicia._id}?_method=DELETE&role=admin`,
+                method="POST",
+                onsubmit="return confirm('¿Estás seguro de eliminar esta franquicia?');"
+              )
+
+                button(type="submit", class="outline contrast")
+                  | Borrar

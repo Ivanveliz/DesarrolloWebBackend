@@ -13,6 +13,10 @@ app.use(express.static("public"));
 // Import de rutas
 const employeeRoutes = require("./routes/employeeRoutes");
 const pedidoRoutes = require("./routes/pedidoRoutes");
+const loginRoutes = require("./routes/loginRoutes");
+const franquiciaRoutes = require("./routes/franquiciaRoutes");
+const authMiddleware = require("./middleware/authMiddleware");
+const loginController = require("./controllers/loginController");
 
 // motor de plantillas (Pug)
 app.set("view engine", "pug");
@@ -26,9 +30,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
 // --- Rutas ---
-app.use("/", rutasViewsFile);
-app.use("/", employeeRoutes);
-app.use("/pedidos", pedidoRoutes);
+app.use("/login", loginRoutes);
+app.get('/logout', loginController.logout);
+app.use("/franquicias", authMiddleware, franquiciaRoutes);
+app.use("/", authMiddleware, rutasViewsFile);
+app.use("/", authMiddleware, employeeRoutes);
+app.use("/pedidos", authMiddleware, pedidoRoutes);
 
 app.listen(PORT, function() {
     console.log("Servidor corriendo en http://localhost:" + PORT + "/");

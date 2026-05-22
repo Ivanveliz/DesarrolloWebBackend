@@ -1,22 +1,42 @@
-const Person = require('./Person');
+const mongoose = require("mongoose");
 
-class Employee extends Person {
-    constructor(id, name, surname, dni, role, shift) {
+const employeeSchema = new mongoose.Schema({
 
-        // super llama al constructor de la clase padre (Person) es muy  de JS el super
+    name: {
+        type: String,
+        required: true
+    },
 
-        super(id, name, surname, dni);
-        this.role = role;
-        this.shift = shift;
+    surname: {
+        type: String,
+        required: true
+    },
+
+    dni: {
+        type: Number,
+        required: true
+    },
+
+    role: {
+        type: String,
+        required: true
+    },
+
+    shift: {
+        type: String,
+        required: true
+    },
+
+    email: {
+        type: String,
+        required: true
+    },
+
+    password: {
+        type: String,
+        required: true
     }
 
-    getEmploye() {
-        return {
-            fullName: this.getFullName(),
-            workPosition: this.role,
-            workShift: this.shift
-        }
-    }
-}
+});
 
-module.exports = Employee;
+module.exports = mongoose.model("Employee", employeeSchema);
