@@ -191,4 +191,3 @@ Esto se hace en `config/db.js`.
 - Vistas en Pug
 - Rutas protegidas con middleware
 
-¡Listo! Ahora tu README refleja el estado actual del proyecto.
