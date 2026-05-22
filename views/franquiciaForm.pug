@@ -1,0 +1,74 @@
+extends layout
+
+block content
+  h2= isEdit ? 'Editar Franquicia' : 'Registrar Nueva Franquicia'
+
+  - const actionUrl = isEdit ? `/franquicias/${franquicia._id}?_method=PUT&role=admin` : '/franquicias?role=admin'
+
+  form(action=actionUrl, method="POST")
+
+    label Razón Social (nombre comercial)
+      input(
+        type="text",
+        name="razonSocial",
+        required,
+        value=(isEdit ? franquicia.razonSocial : '')
+      )
+
+    label CUIT
+      input(
+        type="text",
+        name="cuit",
+        required,
+        value=(isEdit ? franquicia.cuit : '')
+      )
+
+    label Dirección Comercial
+      input(
+        type="text",
+        name="direccion",
+        required,
+        value=(isEdit ? franquicia.direccion : '')
+      )
+
+    label Localidad
+      input(
+        type="text",
+        name="localidad",
+        required,
+        value=(isEdit ? franquicia.localidad : '')
+      )
+
+    label Correo Electrónico
+      input(
+        type="email",
+        name="correo",
+        required,
+        value=(isEdit ? franquicia.correo : '')
+      )
+
+    label Encargado
+      input(
+        type="text",
+        name="encargado",
+        required,
+        value=(isEdit ? franquicia.encargado : '')
+      )
+
+    label Teléfono
+      input(
+        type="text",
+        name="telefono",
+        required,
+        value=(isEdit ? franquicia.telefono : '')
+      )
+
+    button(type="submit")
+      = isEdit ? 'Guardar Cambios' : 'Crear Franquicia'
+
+    a(
+      href="/franquicias?role=admin",
+      role="button",
+      class="secondary outline",
+      style="margin-left: 1rem;"
+    ) Cancelar

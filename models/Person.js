@@ -1,20 +1,28 @@
-class Person {
-    constructor(id, name, surname, dni) {
+const mongoose = require("mongoose");
 
-        this.id = id;
-        this.name = name;
-        this.surname = surname;
-        this.dni = dni;
-    }
+const personaSchema = new mongoose.Schema({
 
+  nombre: {
+    type: String,
+    required: true
+  },
 
-    getFullName() {
-        return {
-            name: this.name,
-            surname: this.surname,
-            fullName: `${this.name} ${this.surname}`
-        };
-    }
-}
+  email: {
+    type: String,
+    required: true
+  },
 
-module.exports = Person;
+  password: {
+    type: String,
+    required: true
+  },
+
+  rol: {
+    type: String,
+    enum: ["admin", "operario"],
+    default: "operario"
+  }
+
+});
+
+module.exports = mongoose.model("Persona", personaSchema);
