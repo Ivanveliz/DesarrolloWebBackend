@@ -1,14 +1,15 @@
+require("dotenv").config();
+
 const express = require("express");
+const conectarDB = require("./config/db");
 const methodOverride = require("method-override");
 require("dotenv").config();
 const rutasViewsFile = require("./routes/routesViews");
 
-
+conectarDB();
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.use(express.static("public"));
-
 // Import de rutas
 const employeeRoutes = require("./routes/employeeRoutes");
 const pedidoRoutes = require("./routes/pedidoRoutes");
