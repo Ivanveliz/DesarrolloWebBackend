@@ -37,7 +37,7 @@ app.use("/", authMiddleware, rutasViewsFile);
 app.use("/", authMiddleware, employeeRoutes);
 app.use("/pedidos", authMiddleware, pedidoRoutes);
 
-app.listen(PORT, function() {
+app.listen(PORT, function () {
     console.log("Servidor corriendo en http://localhost:" + PORT + "/");
     console.log("Modulo de pedidos activo en http://localhost:" + PORT + "/pedidos");
 });

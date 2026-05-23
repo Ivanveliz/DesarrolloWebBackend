@@ -73,7 +73,7 @@ const createFranquicia = async (req, res) => {
             return res.send('El correo electrónico ya está asociado a otra franquicia');
         }
 
-        await Franquicia.create({
+        const nuevaFranquicia = await Franquicia.create({
             razonSocial,
             cuit,
             direccion,
@@ -83,7 +83,10 @@ const createFranquicia = async (req, res) => {
             telefono
         });
 
-        res.redirect('/franquicias?role=admin');
+        res.format({
+            html: () => res.redirect('/franquicias?role=admin'),
+            json: () => res.status(201).json(nuevaFranquicia)
+        });
 
     } catch (error) {
 
