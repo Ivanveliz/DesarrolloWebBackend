@@ -119,6 +119,7 @@ Esto se hace en `config/db.js`.
 - `GET /franquicias` → lista franquicias (solo admin)
 - `GET /franquicias/nuevo` → nuevo registro (solo admin)
 - `POST /franquicias` → crear franquicia (solo admin)
+- `GET /franquicias/:id` → obtener JSON de una franquicia (API)
 - `GET /franquicias/:id/editar` → editar franquicia (solo admin)
 - `PUT /franquicias/:id` → actualizar franquicia (solo admin)
 - `DELETE /franquicias/:id` → borrar franquicia (solo admin)
@@ -128,6 +129,12 @@ Esto se hace en `config/db.js`.
 - `GET /pedidos/:id` → detalle pedido
 - `POST /pedidos/crear` → crear pedido
 
+---
+
+## Negociación de Contenido (API Híbrida)
+El sistema utiliza `res.format()` para responder según el encabezado `Accept` de la petición:
+- **Navegadores:** Reciben `text/html` (vistas Pug).
+- **Clientes de API (Thunder):** Reciben `application/json` si se especifica el header.
 ---
 
 ## Cómo funciona la protección de rutas
@@ -190,4 +197,3 @@ Esto se hace en `config/db.js`.
 - Módulo de franquicias para admin
 - Vistas en Pug
 - Rutas protegidas con middleware
-

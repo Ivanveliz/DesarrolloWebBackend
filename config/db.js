@@ -17,18 +17,18 @@ const conectarDB = async () => {
 
 const crearAdminInicial = async () => {
   try {
-    const adminEmail = 'admin@admin.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com';
     const admin = await Employee.findOne({ email: adminEmail });
 
     if (!admin) {
       await Employee.create({
         name: 'Admin',
         surname: 'Principal',
-        dni: 11111111,
+        dni: 0,
         role: 'admin',
-        shift: 'Mañana',
+        shift: 'N/A',
         email: adminEmail,
-        password: '1234'
+        password: process.env.ADMIN_PASSWORD || '1234'
       });
       console.log('Usuario admin creado:', adminEmail);
     }
