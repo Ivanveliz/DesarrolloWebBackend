@@ -3,11 +3,18 @@ const router = express.Router();
 const employeeController = require('../controllers/employeeController');
 const { createPedido, getPedidoById, getAllPedidos } = require('../controllers/pedidoController');
 
+// Middleware para bloquear acceso a vistas de edición/creación al rol operario
+const blockOperario = (req, res, next) => {
+    if (req.user && req.user.role === 'operario') {
+        return res.status(403).send('Acceso denegado: Los operarios no pueden modificar la información.');
+    }
+    next();
+};
 
 // rutas de vistas:
 router.get('/', employeeController.getAllEmployees);
-router.get('/nuevo', employeeController.renderNewForm);
-router.get('/:id/editar', employeeController.renderEditForm);
+router.get('/nuevo', blockOperario, employeeController.renderNewForm);
+router.get('/:id/editar', blockOperario, employeeController.renderEditForm);
 
 // Definimos las rutas de pedidos (ARRIBA de /:id para evitar que colisionen)
 router.get("/pedidos", getAllPedidos);          

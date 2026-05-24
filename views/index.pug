@@ -24,9 +24,10 @@ block content
               td= emp.role
               td= emp.shift
               td.actions-col
-                a(href=`/${emp._id}/editar`, role="button", class="secondary outline") Editar
+                if user && user.role !== 'operario'
+                  a(href=`/${emp._id}/editar`, role="button", class="secondary outline") Editar
 
-                //- Al apretar el botón, esto envía un método DELETE procesado por method-override
-                
-                form(action=`/${emp._id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Estás seguro de que deseas eliminar este empleado?');")
-                  button(type="submit", class="outline contrast") Borrar
+                  //- Al apretar el botón, esto envía un método DELETE procesado por method-override
+                  
+                  form(action=`/${emp._id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Estás seguro de que deseas eliminar este empleado?');")
+                    button(type="submit", class="outline contrast") Borrar

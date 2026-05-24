@@ -1,6 +1,5 @@
 const Employee = require('../models/Employee');
 
-//Esto es para que el login no se muestre si ya hay una sesión activa.
 
 const parseCookies = (cookieHeader) => {
     if (!cookieHeader) return {};
@@ -33,9 +32,12 @@ const processLogin = async (req, res) => {
         const employee = await Employee.findOne({ email, password });
 
         if (!employee) {
-            return res.render('login', {
-                error: 'Email o contraseña incorrectos',
-                email
+            return res.format({
+                json: () => res.status(401).json({ error: 'Email o contraseña incorrectos' }),
+                html: () => res.render('login', {
+                    error: 'Email o contraseña incorrectos',
+                    email
+                })
             });
         }
 
@@ -44,7 +46,10 @@ const processLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000
         });
 
-        return res.redirect('/');
+        res.format({
+            json: () => res.json({ message: 'Login exitoso', user: { email: employee.email, role: employee.role } }),
+            html: () => res.redirect('/')
+        });
 
     } catch (error) {
         console.log(error);

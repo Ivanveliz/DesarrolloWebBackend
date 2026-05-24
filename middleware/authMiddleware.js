@@ -17,21 +17,30 @@ const authMiddleware = (req, res, next) => {
     const userCookie = cookies.user;
 
     if (!userCookie) {
-        return res.redirect('/login');
+        return res.format({
+            json: () => res.status(401).json({ error: 'No autenticado. Por favor, inicia sesión.' }),
+            html: () => res.redirect('/login')
+        });
     }
 
     let user;
     try {
         user = JSON.parse(userCookie);
     } catch (error) {
-        return res.redirect('/login');
+        return res.format({
+            json: () => res.status(401).json({ error: 'Sesión inválida.' }),
+            html: () => res.redirect('/login')
+        });
     }
 
     req.user = user;
     res.locals.user = user;
 
     if (req.baseUrl.startsWith('/franquicias') && user.role !== 'admin') {
-        return res.status(403).send('Acceso restringido: solo administradores pueden ingresar a franquicias.');
+        return res.format({
+            json: () => res.status(403).json({ error: 'Acceso restringido: se requiere rol de administrador.' }),
+            html: () => res.status(403).send('Acceso restringido: solo administradores pueden ingresar a franquicias.')
+        });
     }
 
     return next();

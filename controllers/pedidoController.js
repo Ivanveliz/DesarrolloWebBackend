@@ -1,7 +1,7 @@
 const Pedido = require('../models/Pedido');
 const productos = require('../config/productos.json');
 
-// READ ALL
+
 const getAllPedidos = (req, res) => {
     try {
         const pedidos = Pedido.getAll();
@@ -14,7 +14,7 @@ const getAllPedidos = (req, res) => {
     }
 };
 
-// READ ONE
+
 const getPedidoById = (req, res) => {
     try {
         const pedido = Pedido.getById(req.params.id);
