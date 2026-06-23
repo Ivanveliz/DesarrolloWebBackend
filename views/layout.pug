@@ -31,11 +31,10 @@ html(lang="es")
 
       nav
         ul
-          li: a(href="/") Lista de Empleados
-          if user && user.role !== 'operario'
-            li: a(href="/nuevo", role="button", class="outline") + Nuevo Empleado
+          li: a(href="/") Empleados
           if user && user.role === 'admin'
-            li: a(href="/franquicias?role=admin") Franquicias
+            li: a(href="/franquicias") Franquicias
           li: a(href="/pedidos") Pedidos
+          li: a(href="/productos") Productos
       
       block content

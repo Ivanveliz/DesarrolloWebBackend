@@ -11,15 +11,16 @@ const blockOperario = (req, res, next) => {
     next();
 };
 
-// rutas de vistas:
+// rutas de vistas de empleados:
 router.get('/', employeeController.getAllEmployees);
 router.get('/nuevo', blockOperario, employeeController.renderNewForm);
 router.get('/:id/editar', blockOperario, employeeController.renderEditForm);
+router.get('/:id', employeeController.getEmployeeById);
 
 // Definimos las rutas de pedidos (ARRIBA de /:id para evitar que colisionen)
-router.get("/pedidos", getAllPedidos);          
-router.get('/pedidos/:id', getPedidoById);       
-router.post('/pedidos/crear', createPedido);     
+// router.get("/pedidos", getAllPedidos);          
+// router.get('/pedidos/:id', getPedidoById);       
+// router.post('/pedidos/crear', createPedido);     
 
 // La ruta dinámica /:id de empleados DEBE ir al final para no atrapar a /pedidos
 router.get('/:id', employeeController.getEmployeeById);

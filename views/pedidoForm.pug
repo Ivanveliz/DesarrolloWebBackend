@@ -1,0 +1,33 @@
+extends layout
+
+block content
+  h2= isEdit ? 'Editar Pedido' : 'Crear Nuevo Pedido'
+  
+  - const actionUrl = isEdit ? `/pedidos/${pedido._id}?_method=PUT` : '/pedidos'
+  
+  form(action=actionUrl, method="POST")
+    label Seleccionar Franquicia
+      select(name="franquiciaId", required)
+        option(value="", disabled, selected=!isEdit) Elija una franquicia...
+        each franq in franquicias
+          option(value=franq._id, selected=(isEdit && pedido.franquiciaId && pedido.franquiciaId.toString() === franq._id.toString()))= franq.razonSocial
+          
+    label Seleccionar Producto Principal
+      select(name="productos[0][productoId]", required)
+        option(value="", disabled, selected=!isEdit) Elija un producto...
+        each prod in productos
+          option(value=prod._id, selected=(isEdit && pedido.productos[0] && pedido.productos[0].productoId && pedido.productos[0].productoId.toString() === prod._id.toString()))= prod.nombre
+          
+    label Cantidad
+      input(type="number", name="productos[0][cantidad]", min="1", required, value=(isEdit && pedido.productos[0] ? pedido.productos[0].cantidad : ''))
+      
+    if isEdit
+      label Estado del Pedido
+        select(name="estado", required)
+          option(value="pendiente", selected=pedido.estado==="pendiente") Pendiente
+          option(value="en proceso", selected=pedido.estado==="en proceso") En Proceso
+          option(value="completado", selected=pedido.estado==="completado") Completado
+          option(value="cancelado", selected=pedido.estado==="cancelado") Cancelado
+
+    button(type="submit")= isEdit ? 'Guardar Cambios' : 'Crear Pedido'
+    a(href="/pedidos", role="button", class="secondary outline", style="margin-left: 1rem;") Cancelar

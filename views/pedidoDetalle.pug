@@ -1,0 +1,48 @@
+extends layout
+
+block content
+  h2 Detalle del Pedido 
+    small (ID: #{pedido._id.toString().slice(-6)})
+  
+  div(style="margin-bottom: 2rem; padding: 1rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius);")
+    p 
+      strong Franquicia: 
+      | #{pedido.franquiciaId.razonSocial}
+    p 
+      strong Estado: 
+      span(class=pedido.estado) #{pedido.estado.toUpperCase()}
+    p 
+      strong Fecha: 
+      | #{new Date(pedido.fecha).toLocaleString()}
+
+  h3 Productos Solicitados
+  if pedido.productos && pedido.productos.length > 0
+    table
+      thead
+        tr
+          th Producto
+          th Categoría
+          th Precio Unitario
+          th Cantidad
+          th Subtotal
+      tbody
+        - let total = 0
+        each item in pedido.productos
+          if item.productoId
+            - const subtotal = item.productoId.precio * item.cantidad
+            - total += subtotal
+            tr
+              td= item.productoId.nombre
+              td= item.productoId.categoria
+              td $#{item.productoId.precio}
+              td= item.cantidad
+              td $#{subtotal}
+      tfoot
+        tr
+          td(colspan="4", style="text-align: right; font-weight: bold;") Total del Pedido:
+          td(style="font-weight: bold;") $#{total}
+  else
+    p No hay productos válidos en este pedido.
+
+  div(style="margin-top: 2rem;")
+    a(href="/pedidos", role="button", class="secondary outline") Volver a Pedidos

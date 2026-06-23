@@ -3,22 +3,30 @@ extends layout
 block content
   h2 Pedidos
 
-  table
-    thead
-      tr
-        th ID
-        th Franquicia
-        th Estado
-        th Fecha
-        th Productos
+  a(href="/pedidos/nuevo", role="button", class="outline")
+    | + Nuevo Pedido
 
-    tbody
-      each pedido in pedidos
+  if pedidos.length === 0
+    p No hay pedidos registrados en la base de datos (vacía).
+  else
+    table
+      thead
         tr
-          td= pedido.id
-          td= pedido.franquiciaId
-          td(class=pedido.estado)= pedido.estado
-          td= pedido.fecha
-
-          td
-            button(type="button", onclick=`location.href='/pedidos/${pedido.id}'`) Ver productos
+          th ID Pedido
+          th Franquicia
+          th Estado
+          th Fecha
+          th Acciones
+      tbody
+        each pedido in pedidos
+          tr
+            td= pedido._id.toString().slice(-6)
+            td= pedido.franquiciaId ? pedido.franquiciaId.razonSocial : 'No asignada'
+            td(class=pedido.estado)= pedido.estado
+            td= new Date(pedido.fecha).toLocaleDateString()
+            td.actions-col
+              a(href=`/pedidos/${pedido._id}`, role="button", class="secondary outline", style="margin-right:0.5rem;") Ver
+              a(href=`/pedidos/${pedido._id}/editar`, role="button", class="outline", style="margin-right:0.5rem;") Editar
+              
+              form(action=`/pedidos/${pedido._id}?_method=DELETE`, method="POST", style="display:inline;", onsubmit="return confirm('¿Seguro que deseas eliminar este pedido?');")
+                button(type="submit", class="outline contrast") Borrar

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
 const employeeSchema = new mongoose.Schema({
 
@@ -37,6 +38,15 @@ const employeeSchema = new mongoose.Schema({
         required: true
     }
 
+});
+
+// [NUEVO] Encriptar la contraseña antes de guardar el empleado
+employeeSchema.pre('save', async function() {
+    // Si la contraseña no es nueva ni se modificó, cortamos acá
+    if (!this.isModified('password')) return;
+
+    // Pisamos la contraseña en texto plano por el hash encriptado
+    this.password = await bcrypt.hash(this.password, 10);
 });
 
 module.exports = mongoose.model("Employee", employeeSchema);

@@ -3,7 +3,8 @@ extends layout
 block content
   h2= isEdit ? 'Editar Franquicia' : 'Registrar Nueva Franquicia'
 
-  - const actionUrl = isEdit ? `/franquicias/${franquicia._id}?_method=PUT&role=admin` : '/franquicias?role=admin'
+  //- sacamos el role=admin ya que ahora tenemos JWT y el authMiddleware leyendo req.user.role, no necesitamos ensuciar las URLs
+  - const actionUrl = isEdit ? `/franquicias/${franquicia._id}?_method=PUT` : '/franquicias'
 
   form(action=actionUrl, method="POST")
 
@@ -67,7 +68,7 @@ block content
       = isEdit ? 'Guardar Cambios' : 'Crear Franquicia'
 
     a(
-      href="/franquicias?role=admin",
+      href="/franquicias",
       role="button",
       class="secondary outline",
       style="margin-left: 1rem;"

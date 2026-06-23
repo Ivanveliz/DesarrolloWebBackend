@@ -1,0 +1,34 @@
+extends layout
+
+block content
+  h2 Lista de Productos
+
+  if user && user.role === 'admin'
+    a(href="/productos/nuevo", role="button", class="outline") + Nuevo Producto
+
+  if productos.length === 0
+    p No hay productos registrados todavía en la base de datos.
+  else
+    table
+      thead
+        tr
+          th ID
+          th Nombre
+          th Categoría
+          th Precio
+          th Stock
+          if user && user.role === 'admin'
+            th Acciones
+      tbody
+        each producto, index in productos
+          tr
+            td= index + 1
+            td= producto.nombre
+            td= producto.categoria
+            td $#{producto.precio}
+            td= producto.stock
+            if user && user.role === 'admin'
+              td.actions-col
+                a(href=`/productos/${producto._id}/editar`, role="button", class="secondary outline", style="margin-right:0.5rem;") Editar
+                form(action=`/productos/${producto._id}?_method=DELETE`, method="POST", style="display:inline;", onsubmit="return confirm('¿Eliminar producto?');")
+                  button(type="submit", class="outline contrast") Borrar

@@ -1,106 +1,144 @@
 const Pedido = require('../models/Pedido');
-const productos = require('../config/productos.json');
+const Franquicia = require('../models/Franquicia');
+const Producto = require('../models/Producto');
 
-
-const getAllPedidos = (req, res) => {
+const getAllPedidos = async (req, res) => {
     try {
-        const pedidos = Pedido.getAll();
+        const pedidos = await Pedido.find().populate('franquiciaId');
         res.format({
-            'application/json': () => res.json(pedidos),
-            'text/html': () => res.render("pedidos", { pedidos })
+            json: () => res.json(pedidos),
+            html: () => res.render("pedidos", { pedidos })
         });
     } catch (error) {
-        res.status(500).send("Internal server error");
+        res.status(500).send("Error interno del servidor");
     }
 };
 
-
-const getPedidoById = (req, res) => {
+const getPedidoById = async (req, res) => {
     try {
-        const pedido = Pedido.getById(req.params.id);
+        const pedido = await Pedido.findById(req.params.id)
+            .populate('franquiciaId')
+            .populate('productos.productoId');
 
         if (!pedido) {
-            return res.status(404).json({ error: "Order not found" });
+            return res.format({
+                json: () => res.status(404).json({ error: "Pedido no encontrado" }),
+                html: () => res.status(404).send("Pedido no encontrado")
+            });
         }
 
-        const productosDetallados = pedido.productos.map(item => {
-            const producto = productos.find(p => p.id === item.productoId);
-
-            return {
-                nombre: producto ? producto.nombre : "Desconocido",
-                cantidad: item.cantidad
-            };
+        res.format({
+            json: () => res.json(pedido),
+            html: () => res.render("pedidoDetalle", { pedido })
         });
-
-        const pedidoFinal = {
-            ...pedido,
-            productos: productosDetallados
-        };
-
-        res.json(pedidoFinal);
-
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).send("Error interno del servidor");
     }
 };
 
-// CREATE
-const createPedido = (req, res) => {
+const renderNewForm = async (req, res) => {
+    try {
+        const franquicias = await Franquicia.find();
+        const productos = await Producto.find();
+        res.render("pedidoForm", { isEdit: false, pedido: null, franquicias, productos });
+    } catch (error) {
+        res.status(500).send("Error al cargar formulario");
+    }
+};
+
+const renderEditForm = async (req, res) => {
+    try {
+        const pedido = await Pedido.findById(req.params.id);
+        if (!pedido) return res.status(404).send("Pedido no encontrado");
+
+        const franquicias = await Franquicia.find();
+        const productos = await Producto.find();
+        res.render("pedidoForm", { isEdit: true, pedido, franquicias, productos });
+    } catch (error) {
+        res.status(500).send("Error al cargar formulario de edición");
+    }
+};
+
+const createPedido = async (req, res) => {
     try {
         const { franquiciaId, productos } = req.body;
+        for (let item of productos) {
+            const productoFisico = await Producto.findById(item.productoId);
+            if (!productoFisico) throw new Error("Un producto seleccionado no existe.");
 
-        if (!franquiciaId || !productos || productos.length === 0) {
-            return res.status(400).json({ error: "franquiciaId and products are required" });
+            if (productoFisico.stock < item.cantidad) {
+                throw new Error(`Stock insuficiente de '${productoFisico.nombre}'. Pediste ${item.cantidad} pero solo quedan ${productoFisico.stock} disponibles.`);
+            }
         }
 
-        const newPedido = new Pedido(franquiciaId, productos);
-        const savedPedido = newPedido.create();
+        const nuevoPedido = await Pedido.create(req.body);
 
-        res.status(201).json(savedPedido);
+        for (let item of productos) {
+            await Producto.findByIdAndUpdate(item.productoId, {
+                $inc: { stock: -item.cantidad } // Resta la cantidad
+            });
+        }
+        res.format({
+            json: () => res.status(201).json(nuevoPedido),
+            html: () => res.redirect('/pedidos')
+        });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.format({
+            json: () => res.status(400).json({ error: error.message }),
+            html: () => res.status(400).send(`
+                <article style="padding:2rem; text-align:center; color: red;">
+                    <h2>Operación Denegada</h2>
+                    <p>${error.message}</p>
+                    <a href="/pedidos/nuevo" role="button">Volver al formulario</a>
+                </article>
+            `)
+        });
     }
 };
 
-// UPDATE (Sirve para PUT y PATCH)
-const updatePedido = (req, res) => {
+const updatePedido = async (req, res) => {
     try {
-        const { id } = req.params;
-        const updatedData = req.body;
-
-        const updatedPedido = Pedido.update(id, updatedData);
-
-        if (!updatedPedido) {
-            return res.status(404).json({ error: "Order not found" });
+        const pedidoAntiguo = await Pedido.findById(req.params.id);
+        if (!pedidoAntiguo) return res.status(404).json({ error: "Pedido no encontrado" });
+        const nuevoEstado = req.body.estado;
+        // Si se CANCELA el pedido, devolvemos el stock
+        if (pedidoAntiguo.estado !== 'cancelado' && nuevoEstado === 'cancelado') {
+            for (let item of pedidoAntiguo.productos) {
+                await Producto.findByIdAndUpdate(item.productoId, {
+                    $inc: { stock: item.cantidad } // Suma la cantidad de vuelta
+                });
+            }
         }
+        // INTELIGENCIA DE NEGOCIO: Si estaba cancelado (stock devuelto) y lo reviven, lo volvemos a descontar
+        if (pedidoAntiguo.estado === 'cancelado' && nuevoEstado !== 'cancelado') {
+            for (let item of pedidoAntiguo.productos) {
+                await Producto.findByIdAndUpdate(item.productoId, {
+                    $inc: { stock: -item.cantidad }
+                });
+            }
+        }
+        const updatedPedido = await Pedido.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-        res.status(200).json(updatedPedido);
+        res.format({
+            json: () => res.json(updatedPedido),
+            html: () => res.redirect('/pedidos')
+        });
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).send("Error interno del servidor");
     }
 };
 
-// DELETE
-const deletePedido = (req, res) => {
+const deletePedido = async (req, res) => {
     try {
-        const { id } = req.params;
-        const isDeleted = Pedido.delete(id);
-
-        if (!isDeleted) {
-            return res.status(404).json({ error: "Order not found" });
-        }
-
-        // 204 No Content significa que se borró con éxito y no hay datos que devolver
-        res.status(204).send(); 
+        const isDeleted = await Pedido.findByIdAndDelete(req.params.id);
+        if (!isDeleted) return res.status(404).json({ error: "Pedido no encontrado" });
+        res.format({
+            json: () => res.status(204).send(),
+            html: () => res.redirect('/pedidos')
+        });
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).send("Error interno");
     }
 };
 
-module.exports = {
-    getAllPedidos,
-    getPedidoById,
-    createPedido,
-    updatePedido,
-    deletePedido
-};
+module.exports = { getAllPedidos, getPedidoById, renderNewForm, renderEditForm, createPedido, updatePedido, deletePedido };

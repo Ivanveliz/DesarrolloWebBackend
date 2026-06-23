@@ -1,9 +1,13 @@
 extends layout
 
 block content
-  h2 Empleados Actuales
+  h2 Lista de Empleados 
+
+  if user && user.role !== 'operario'
+    a(href="/nuevo", role="button", class="outline") + Nuevo Empleado
+  
   if employees.length === 0
-    p No hay empleados registrados todavía. Anímate a crear uno.
+    p No hay empleados registrados todavía.
   else
     figure
       table

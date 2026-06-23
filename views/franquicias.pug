@@ -3,7 +3,9 @@ extends layout
 block content
   h2 Franquicias
 
-  a(href="/franquicias/nuevo?role=admin", role="button", class="outline")
+  //- sacamos el role=admin ya que ahora tenemos JWT y el authMiddleware leyendo req.user.role, no necesitamos ensuciar las URLs
+  //- a(href="/franquicias/nuevo?role=admin", role="button", class="outline")
+  a(href="/franquicias/nuevo", role="button", class="outline")
     | + Nueva Franquicia
 
   if franquicias.length === 0
@@ -34,13 +36,13 @@ block content
             td.actions-col
 
               a(
-                href=`/franquicias/${franquicia._id}/editar?role=admin`,
+                href=`/franquicias/${franquicia._id}/editar`,
                 role="button",
                 class="secondary outline"
               ) Editar
 
               form(
-                action=`/franquicias/${franquicia._id}?_method=DELETE&role=admin`,
+                action=`/franquicias/${franquicia._id}?_method=DELETE`,
                 method="POST",
                 onsubmit="return confirm('¿Estás seguro de eliminar esta franquicia?');"
               )
