@@ -66,12 +66,13 @@ const processLogin = async (req, res) => {
             });
         }
 
-         const token = jwt.sign(
-            { 
-                id: employee._id, 
-                email: employee.email, 
-                role: employee.role 
-            }, 
+        const token = jwt.sign(
+            {
+                id: employee._id,
+                email: employee.email,
+                role: employee.role,
+                franquiciaId: employee.franquiciaId
+            },
             process.env.JWT_SECRET, // Usamos la variable de entorno
             { expiresIn: '24h' } // El token expira en 24 horas
         );
@@ -89,7 +90,14 @@ const processLogin = async (req, res) => {
 
         res.format({
             json: () => res.json({ message: 'Login exitoso', user: { email: employee.email, role: employee.role } }),
-            html: () => res.redirect('/')
+            html: () => {
+                // Redirección basada en rol
+                if (employee.role === 'admin') {
+                    return res.redirect('/'); // El admin va a la lista de empleados
+                } else {
+                    return res.redirect('/pedidos'); // El operario va directo a sus pedidos
+                }
+            }
         });
 
     } catch (error) {

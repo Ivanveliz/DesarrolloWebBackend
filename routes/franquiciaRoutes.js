@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const franquiciaController = require('../controllers/franquiciaController');
+const { requireAdmin } = require('../middleware/roleMiddleware');
 
+router.use(requireAdmin);
 router.get('/', franquiciaController.getAllFranquicias);
 router.get('/nuevo', franquiciaController.renderNewForm);
 router.post('/', franquiciaController.createFranquicia);

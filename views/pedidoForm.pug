@@ -25,8 +25,10 @@ block content
       label Estado del Pedido
         select(name="estado", required)
           option(value="pendiente", selected=pedido.estado==="pendiente") Pendiente
-          option(value="en proceso", selected=pedido.estado==="en proceso") En Proceso
-          option(value="completado", selected=pedido.estado==="completado") Completado
+          //- Ocultamos estos estados a los operarios
+          if user && user.role === 'admin'
+            option(value="en proceso", selected=pedido.estado==="en proceso") En Proceso
+            option(value="completado", selected=pedido.estado==="completado") Completado
           option(value="cancelado", selected=pedido.estado==="cancelado") Cancelado
 
     button(type="submit")= isEdit ? 'Guardar Cambios' : 'Crear Pedido'

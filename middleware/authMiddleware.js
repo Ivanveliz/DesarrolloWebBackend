@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-//Un middleware es una función que se ejecuta ANTES de entrar a una ruta.
 //authMiddleware sirve para proteger el sistema. Si el usuario no tiene la cookie de autenticación, lo redirige al login. Si la tiene, le permite seguir y además le agrega la información del usuario a req.user para que esté disponible en las rutas.
 // const parseCookies = (cookieHeader) => {
 //     if (!cookieHeader) return {};
@@ -30,20 +29,12 @@ const authMiddleware = (req, res, next) => {
 
         // Verificamos el token usando nuestra clave secreta
         const decodedUser = jwt.verify(token, process.env.JWT_SECRET);
-        
+
         // Guardamos los datos decodificados para que estén disponibles en las rutas y vistas
         req.user = decodedUser;
         res.locals.user = decodedUser;
 
-        // Logica de roles movida dentro del try
-        if (req.baseUrl.startsWith('/franquicias') && req.user.role !== 'admin') {
-        return res.format({
-            json: () => res.status(403).json({ error: 'Acceso restringido: se requiere rol de administrador.' }),
-            html: () => res.status(403).send('Acceso restringido: solo administradores pueden ingresar a franquicias.')
-        });
-    }
-
-    return next();
+        return next();
 
     } catch (error) {
         res.clearCookie('jwt');
@@ -55,7 +46,7 @@ const authMiddleware = (req, res, next) => {
 
     // req.user = user;
     // res.locals.user = user;
-    
+
 };
 
 module.exports = authMiddleware;

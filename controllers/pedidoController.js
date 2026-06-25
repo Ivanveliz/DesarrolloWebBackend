@@ -4,7 +4,11 @@ const Producto = require('../models/Producto');
 
 const getAllPedidos = async (req, res) => {
     try {
-        const pedidos = await Pedido.find().populate('franquiciaId');
+        // Si no es admin, filtra estrictamente por el franquiciaId inyectado en el JWT
+        const filtro = req.user.role === 'admin' ? {} : { franquiciaId: req.user.franquiciaId };
+
+        const pedidos = await Pedido.find(filtro).populate('franquiciaId');
+
         res.format({
             json: () => res.json(pedidos),
             html: () => res.render("pedidos", { pedidos })
@@ -27,6 +31,14 @@ const getPedidoById = async (req, res) => {
             });
         }
 
+        // Si no es admin y el franquiciaId del pedido NO coincide con el del empleado
+        if (req.user.role !== 'admin' && pedido.franquiciaId._id.toString() !== req.user.franquiciaId.toString()) {
+            return res.format({
+                json: () => res.status(403).json({ error: "Acceso denegado. Este pedido pertenece a otra sucursal." }),
+                html: () => res.status(403).send("Acceso denegado. Este pedido pertenece a otra sucursal.")
+            });
+        }
+
         res.format({
             json: () => res.json(pedido),
             html: () => res.render("pedidoDetalle", { pedido })
@@ -38,8 +50,12 @@ const getPedidoById = async (req, res) => {
 
 const renderNewForm = async (req, res) => {
     try {
-        const franquicias = await Franquicia.find();
+        // Admin ve todas, operario solo la suya
+        const filtroFranquicia = req.user.role === 'admin' ? {} : { _id: req.user.franquiciaId };
+
+        const franquicias = await Franquicia.find(filtroFranquicia);
         const productos = await Producto.find();
+
         res.render("pedidoForm", { isEdit: false, pedido: null, franquicias, productos });
     } catch (error) {
         res.status(500).send("Error al cargar formulario");
@@ -51,17 +67,26 @@ const renderEditForm = async (req, res) => {
         const pedido = await Pedido.findById(req.params.id);
         if (!pedido) return res.status(404).send("Pedido no encontrado");
 
-        const franquicias = await Franquicia.find();
+        const filtroFranquicia = req.user.role === 'admin' ? {} : { _id: req.user.franquiciaId };
+
+        const franquicias = await Franquicia.find(filtroFranquicia);
         const productos = await Producto.find();
+
         res.render("pedidoForm", { isEdit: true, pedido, franquicias, productos });
     } catch (error) {
         res.status(500).send("Error al cargar formulario de edición");
     }
 };
 
+
 const createPedido = async (req, res) => {
     try {
         const { franquiciaId, productos } = req.body;
+
+        if (req.user.role !== 'admin') {
+            req.body.franquiciaId = req.user.franquiciaId;
+        }
+
         for (let item of productos) {
             const productoFisico = await Producto.findById(item.productoId);
             if (!productoFisico) throw new Error("Un producto seleccionado no existe.");
@@ -100,25 +125,47 @@ const updatePedido = async (req, res) => {
     try {
         const pedidoAntiguo = await Pedido.findById(req.params.id);
         if (!pedidoAntiguo) return res.status(404).json({ error: "Pedido no encontrado" });
+
+        // Validar que el operario sea dueño de este pedido
+        if (req.user.role !== 'admin' && pedidoAntiguo.franquiciaId.toString() !== req.user.franquiciaId.toString()) {
+            return res.format({
+                json: () => res.status(403).json({ error: "Acceso denegado a este pedido" }),
+                html: () => res.status(403).send("Acceso denegado a este pedido")
+            });
+        }
+        // Evitar que cambien el franquiciaId inyectando datos en req.body
+        if (req.user.role !== 'admin') {
+            req.body.franquiciaId = req.user.franquiciaId;
+        }
         const nuevoEstado = req.body.estado;
-        // Si se CANCELA el pedido, devolvemos el stock
-        if (pedidoAntiguo.estado !== 'cancelado' && nuevoEstado === 'cancelado') {
-            for (let item of pedidoAntiguo.productos) {
-                await Producto.findByIdAndUpdate(item.productoId, {
-                    $inc: { stock: item.cantidad } // Suma la cantidad de vuelta
+
+        // Bloquear transiciones de estado inválidas para operarios
+        if (req.user.role !== 'admin') {
+            if (nuevoEstado && !['pendiente', 'cancelado'].includes(nuevoEstado)) {
+                return res.format({
+                    json: () => res.status(403).json({ error: "Operación inválida: Solo los administradores pueden pasar pedidos a 'En Proceso' o 'Completado'." }),
+                    html: () => res.status(403).send("Operación inválida: Solo los administradores pueden pasar pedidos a 'En Proceso' o 'Completado'.")
                 });
             }
         }
-        // INTELIGENCIA DE NEGOCIO: Si estaba cancelado (stock devuelto) y lo reviven, lo volvemos a descontar
+
+        if (pedidoAntiguo.estado !== 'cancelado' && nuevoEstado === 'cancelado') {
+            for (let item of pedidoAntiguo.productos) {
+                await Producto.findByIdAndUpdate(item.productoId, {
+                    $inc: { stock: item.cantidad }
+                }, { returnDocument: 'after' }); // Corrección de Warning de Mongoose
+            }
+        }
+
         if (pedidoAntiguo.estado === 'cancelado' && nuevoEstado !== 'cancelado') {
             for (let item of pedidoAntiguo.productos) {
                 await Producto.findByIdAndUpdate(item.productoId, {
                     $inc: { stock: -item.cantidad }
-                });
+                }, { returnDocument: 'after' });
             }
         }
-        const updatedPedido = await Pedido.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
+        const updatedPedido = await Pedido.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         res.format({
             json: () => res.json(updatedPedido),
             html: () => res.redirect('/pedidos')
@@ -130,8 +177,17 @@ const updatePedido = async (req, res) => {
 
 const deletePedido = async (req, res) => {
     try {
-        const isDeleted = await Pedido.findByIdAndDelete(req.params.id);
-        if (!isDeleted) return res.status(404).json({ error: "Pedido no encontrado" });
+        // Buscar primero para verificar propiedad antes de borrar
+        const pedido = await Pedido.findById(req.params.id);
+        if (!pedido) return res.status(404).json({ error: "Pedido no encontrado" });
+        if (req.user.role !== 'admin' && pedido.franquiciaId.toString() !== req.user.franquiciaId.toString()) {
+            return res.format({
+                json: () => res.status(403).json({ error: "Acceso denegado a este pedido" }),
+                html: () => res.status(403).send("Acceso denegado a este pedido")
+            });
+        }
+        await Pedido.findByIdAndDelete(req.params.id);
+
         res.format({
             json: () => res.status(204).send(),
             html: () => res.redirect('/pedidos')

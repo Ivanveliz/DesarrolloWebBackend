@@ -36,12 +36,18 @@ const employeeSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
+    },
+
+    franquiciaId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Franquicia',
+        required: false // Lo dejamos en false por si el usuario 'admin' no pertenece a ninguna franquicia
     }
 
 });
 
-// [NUEVO] Encriptar la contraseña antes de guardar el empleado
-employeeSchema.pre('save', async function() {
+// Encriptar la contraseña antes de guardar el empleado
+employeeSchema.pre('save', async function () {
     // Si la contraseña no es nueva ni se modificó, cortamos acá
     if (!this.isModified('password')) return;
 

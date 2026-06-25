@@ -3,7 +3,8 @@ const bcrypt = require('bcrypt');
 
 const getAllEmployees = async (req, res) => {
     try {
-        const employees = await Employee.find();
+        // Excluir explícitamente el campo password de la respuesta
+        const employees = await Employee.find().select('-password');;
         res.format({
             'application/json': () => res.status(200).json({ employees }),
             'text/html': () => res.render('empleados', { employees })
@@ -19,7 +20,7 @@ const getEmployeeById = async (req, res) => {
 
         const id = req.params.id;
 
-        const employee = await Employee.findById(id);
+        const employee = await Employee.findById(id).select('-password');;
 
         if (!employee) {
 
