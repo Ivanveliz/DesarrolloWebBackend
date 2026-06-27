@@ -1,228 +1,442 @@
-const Pedido = require('../models/Pedido');
-const Franquicia = require('../models/Franquicia');
-const Producto = require('../models/Producto');
+const Pedido = require("../models/Pedido");
+const Franquicia = require("../models/Franquicia");
+const Producto = require("../models/Producto");
 
+function getUsuario(req) {
+  return req.user || req.session?.usuario || req.session?.user || null;
+}
+
+function getRol(req) {
+  const usuario = getUsuario(req);
+  return usuario?.role || usuario?.rol || null;
+}
+
+function esAdmin(req) {
+  const rol = getRol(req);
+  return rol === "admin" || rol === "administrador";
+}
+
+function getFranquiciaUsuario(req) {
+  const usuario = getUsuario(req);
+  return usuario?.franquiciaId || usuario?.franquicia || null;
+}
+
+function valorId(valor) {
+  if (!valor) return "";
+  if (typeof valor === "object") {
+    return String(valor._id || valor.id || "");
+  }
+  return String(valor);
+}
+
+function getIdFranquiciaPedido(pedido) {
+  return valorId(pedido?.franquiciaId);
+}
+
+function puedeAcceder(req, pedido) {
+  if (esAdmin(req)) return true;
+
+  const franquiciaUsuario = getFranquiciaUsuario(req);
+
+  // Si no hay usuario/franquicia cargado, no rompemos la app.
+  if (!franquiciaUsuario) return true;
+
+  return getIdFranquiciaPedido(pedido) === valorId(franquiciaUsuario);
+}
+
+function normalizarProductos(productos) {
+  if (!productos) return [];
+
+  let lista = productos;
+
+  if (!Array.isArray(lista) && typeof lista === "object") {
+    lista = Object.values(lista);
+  }
+
+  if (!Array.isArray(lista)) {
+    return [];
+  }
+
+  return lista
+    .map((item) => ({
+      productoId: item.productoId,
+      cantidad: Number(item.cantidad)
+    }))
+    .filter((item) => item.productoId && item.cantidad > 0);
+}
+
+async function obtenerTodosLosPedidos() {
+  if (typeof Pedido.getAll === "function") {
+    return Pedido.getAll();
+  }
+
+  if (typeof Pedido.find === "function") {
+    return await Pedido.find().lean();
+  }
+
+  return [];
+}
+
+async function obtenerPedidoPorId(id) {
+  if (typeof Pedido.getById === "function") {
+    return Pedido.getById(id);
+  }
+
+  if (typeof Pedido.findById === "function") {
+    return await Pedido.findById(id).lean();
+  }
+
+  return null;
+}
+
+async function agregarNombreFranquicia(pedidos) {
+  const franquicias = await Franquicia.find().lean();
+
+  const mapaFranquicias = new Map();
+
+  franquicias.forEach((franquicia) => {
+    if (franquicia._id) mapaFranquicias.set(String(franquicia._id), franquicia);
+    if (franquicia.id) mapaFranquicias.set(String(franquicia.id), franquicia);
+  });
+
+  return pedidos.map((pedido) => {
+    let franquiciaEncontrada = null;
+
+    if (pedido.franquiciaId && typeof pedido.franquiciaId === "object") {
+      franquiciaEncontrada = pedido.franquiciaId;
+    } else {
+      franquiciaEncontrada = mapaFranquicias.get(String(pedido.franquiciaId));
+    }
+
+    const franquiciaNombre =
+      franquiciaEncontrada?.razonSocial ||
+      franquiciaEncontrada?.nombre ||
+      franquiciaEncontrada?.nombreFantasia ||
+      "No asignado";
+
+    return {
+      ...pedido,
+      franquiciaIdOriginal: pedido.franquiciaId,
+      franquiciaId: franquiciaEncontrada || pedido.franquiciaId,
+      franquiciaNombre
+    };
+  });
+}
+
+// LISTAR PEDIDOS
 const getAllPedidos = async (req, res) => {
-    try {
-        // Si no es admin, filtra estrictamente por el franquiciaId inyectado en el JWT
-        const filtro = req.user.role === 'admin' ? {} : { franquiciaId: req.user.franquiciaId };
+  try {
+    let pedidos = await obtenerTodosLosPedidos();
+    pedidos = await agregarNombreFranquicia(pedidos);
 
-        const pedidos = await Pedido.find(filtro).populate('franquiciaId');
-
-        res.format({
-            json: () => res.json(pedidos),
-            html: () => res.render("pedidos", { pedidos })
-        });
-    } catch (error) {
-        res.status(500).send("Error interno del servidor");
-    }
+    res.render("pedidos", {
+      title: "Pedidos",
+      pedidos
+    });
+  } catch (error) {
+    console.error("Error al obtener pedidos:", error);
+    res.status(500).send("Error interno del servidor");
+  }
 };
 
+// VER DETALLE
 const getPedidoById = async (req, res) => {
-    try {
-        const pedido = await Pedido.findById(req.params.id)
-            .populate('franquiciaId')
-            .populate('productos.productoId');
+  try {
+    let pedido = await obtenerPedidoPorId(req.params.id);
 
-        if (!pedido) {
-            return res.format({
-                json: () => res.status(404).json({ error: "Pedido no encontrado" }),
-                html: () => res.status(404).send("Pedido no encontrado")
-            });
-        }
-
-        // Si no es admin y el franquiciaId del pedido NO coincide con el del empleado
-        if (req.user.role !== 'admin' && pedido.franquiciaId._id.toString() !== req.user.franquiciaId.toString()) {
-            return res.format({
-                json: () => res.status(403).json({ error: "Acceso denegado. Este pedido pertenece a otra sucursal." }),
-                html: () => res.status(403).send("Acceso denegado. Este pedido pertenece a otra sucursal.")
-            });
-        }
-
-        res.format({
-            json: () => res.json(pedido),
-            html: () => res.render("pedidoDetalle", { pedido })
-        });
-    } catch (error) {
-        res.status(500).send("Error interno del servidor");
+    if (!pedido) {
+      return res.status(404).send("Pedido no encontrado");
     }
+
+    if (!puedeAcceder(req, pedido)) {
+      return res.status(403).send("Acceso denegado. Este pedido pertenece a otra sucursal.");
+    }
+
+    const pedidosConFranquicia = await agregarNombreFranquicia([pedido]);
+    pedido = pedidosConFranquicia[0];
+
+    res.format({
+      json: () => res.json(pedido),
+      html: () =>
+        res.render("pedidoDetalle", {
+          title: "Detalle del Pedido",
+          pedido
+        })
+    });
+  } catch (error) {
+    console.error("Error al obtener pedido:", error);
+    res.status(500).send("Error interno del servidor");
+  }
 };
 
+// FORMULARIO NUEVO
 const renderNewForm = async (req, res) => {
-    try {
-        // Admin ve todas, operario solo la suya
-        const filtroFranquicia = req.user.role === 'admin' ? {} : { _id: req.user.franquiciaId };
+  try {
+    const filtroFranquicia =
+      esAdmin(req) || !getFranquiciaUsuario(req)
+        ? {}
+        : { _id: getFranquiciaUsuario(req) };
 
-        const franquicias = await Franquicia.find(filtroFranquicia);
-        const productos = await Producto.find();
+    const franquicias = await Franquicia.find(filtroFranquicia).lean();
+    const productos = await Producto.find().lean();
 
-        res.render("pedidoForm", { isEdit: false, pedido: null, franquicias, productos });
-    } catch (error) {
-        res.status(500).send("Error al cargar formulario");
-    }
+    res.render("pedidoForm", {
+      title: "Nuevo pedido",
+      isEdit: false,
+      pedido: null,
+      franquicias,
+      productos
+    });
+  } catch (error) {
+    console.error("Error al cargar formulario:", error);
+    res.status(500).send("Error al cargar formulario");
+  }
 };
 
+// FORMULARIO EDITAR
 const renderEditForm = async (req, res) => {
-    try {
-        const pedido = await Pedido.findById(req.params.id);
-        if (!pedido) return res.status(404).send("Pedido no encontrado");
+  try {
+    let pedido = await obtenerPedidoPorId(req.params.id);
 
-        const filtroFranquicia = req.user.role === 'admin' ? {} : { _id: req.user.franquiciaId };
-
-        const franquicias = await Franquicia.find(filtroFranquicia);
-        const productos = await Producto.find();
-
-        res.render("pedidoForm", { isEdit: true, pedido, franquicias, productos });
-    } catch (error) {
-        res.status(500).send("Error al cargar formulario de edición");
+    if (!pedido) {
+      return res.status(404).send("Pedido no encontrado");
     }
+
+    if (!puedeAcceder(req, pedido)) {
+      return res.status(403).send("Acceso denegado a este pedido");
+    }
+
+    const pedidosConFranquicia = await agregarNombreFranquicia([pedido]);
+    pedido = pedidosConFranquicia[0];
+
+    const filtroFranquicia =
+      esAdmin(req) || !getFranquiciaUsuario(req)
+        ? {}
+        : { _id: getFranquiciaUsuario(req) };
+
+    const franquicias = await Franquicia.find(filtroFranquicia).lean();
+    const productos = await Producto.find().lean();
+
+    res.render("pedidoForm", {
+      title: "Editar pedido",
+      isEdit: true,
+      pedido,
+      franquicias,
+      productos
+    });
+  } catch (error) {
+    console.error("Error al cargar formulario de edición:", error);
+    res.status(500).send("Error al cargar formulario de edición");
+  }
 };
 
-
+// CREAR PEDIDO
 const createPedido = async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') {
-            req.body.franquiciaId = req.user.franquiciaId;
-        }
+  try {
+    const franquiciaId = esAdmin(req)
+      ? req.body.franquiciaId
+      : getFranquiciaUsuario(req) || req.body.franquiciaId;
 
-        let productos = req.body.productos || [];
-        if (!Array.isArray(productos)) {
-            productos = Object.keys(productos).map(key => productos[key]);
-        }
+    const productos = normalizarProductos(req.body.productos);
 
-        productos = productos
-            .map(item => ({
-                productoId: item.productoId,
-                cantidad: Number(item.cantidad)
-            }))
-            .filter(item => item.productoId && item.cantidad > 0);
+    if (!franquiciaId) {
+      throw new Error("Debe seleccionar una franquicia.");
+    }
 
-        if (productos.length === 0) {
-            throw new Error('Debe agregar al menos un producto con cantidad válida.');
-        }
+    if (productos.length === 0) {
+      throw new Error("Debe agregar al menos un producto con cantidad válida.");
+    }
 
-        req.body.productos = productos;
+    for (const item of productos) {
+      const productoFisico = await Producto.findById(item.productoId);
 
-        for (let item of productos) {
-            const productoFisico = await Producto.findById(item.productoId);
-            if (!productoFisico) throw new Error("Un producto seleccionado no existe.");
+      if (!productoFisico) {
+        throw new Error("Un producto seleccionado no existe.");
+      }
 
-            if (productoFisico.stock < item.cantidad) {
-                throw new Error(`Stock insuficiente de '${productoFisico.nombre}'. Pediste ${item.cantidad} pero solo quedan ${productoFisico.stock} disponibles.`);
-            }
-        }
+      if (productoFisico.stock < item.cantidad) {
+        throw new Error(
+          `Stock insuficiente de '${productoFisico.nombre}'. Pediste ${item.cantidad} pero solo quedan ${productoFisico.stock} disponibles.`
+        );
+      }
+    }
 
-        const nuevoPedido = await Pedido.create(req.body);
+    let nuevoPedido;
 
-for (let item of productos) {
-    await Producto.findByIdAndUpdate(item.productoId, {
+    if (typeof Pedido.getAll === "function") {
+      nuevoPedido = new Pedido(franquiciaId, productos).create();
+    } else if (typeof Pedido.create === "function") {
+      nuevoPedido = await Pedido.create({
+        franquiciaId,
+        productos,
+        estado: "pendiente",
+        fecha: new Date()
+      });
+    }
+
+    for (const item of productos) {
+      await Producto.findByIdAndUpdate(item.productoId, {
         $inc: { stock: -item.cantidad }
-    });
-}
+      });
+    }
 
-const io = req.app.get("io");
-
-if (io) {
-    io.emit("nuevoPedido", {
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("nuevoPedido", {
         mensaje: "Nuevo pedido recibido",
-        pedidoId: nuevoPedido._id,
-        estado: nuevoPedido.estado,
-        fecha: nuevoPedido.fecha || nuevoPedido.createdAt
+        pedidoId: nuevoPedido?._id || nuevoPedido?.id,
+        estado: nuevoPedido?.estado,
+        fecha: nuevoPedido?.fecha
+      });
+    }
+
+    res.format({
+      json: () => res.status(201).json(nuevoPedido),
+      html: () => res.redirect("/pedidos")
     });
-}
+  } catch (error) {
+    console.error("Error al crear pedido:", error);
 
-res.format({
-    json: () => res.status(201).json(nuevoPedido),
-    html: () => res.redirect('/pedidos')
-});
-    } catch (error) {
-        res.format({
-            json: () => res.status(400).json({ error: error.message }),
-            html: () => res.status(400).send(`
-                <article style="padding:2rem; text-align:center; color: red;">
-                    <h2>Operación Denegada</h2>
-                    <p>${error.message}</p>
-                    <a href="/pedidos/nuevo" role="button">Volver al formulario</a>
-                </article>
-            `)
-        });
-    }
+    res.format({
+      json: () => res.status(400).json({ error: error.message }),
+      html: () =>
+        res.status(400).send(`
+          <article style="padding:2rem; text-align:center; color:red;">
+            <h2>Operación denegada</h2>
+            <p>${error.message}</p>
+            <a href="/pedidos/nuevo" role="button">Volver al formulario</a>
+          </article>
+        `)
+    });
+  }
 };
 
+// ACTUALIZAR PEDIDO
 const updatePedido = async (req, res) => {
-    try {
-        const pedidoAntiguo = await Pedido.findById(req.params.id);
-        if (!pedidoAntiguo) return res.status(404).json({ error: "Pedido no encontrado" });
+  try {
+    const pedidoAntiguo = await obtenerPedidoPorId(req.params.id);
 
-        // Validar que el operario sea dueño de este pedido
-        if (req.user.role !== 'admin' && pedidoAntiguo.franquiciaId.toString() !== req.user.franquiciaId.toString()) {
-            return res.format({
-                json: () => res.status(403).json({ error: "Acceso denegado a este pedido" }),
-                html: () => res.status(403).send("Acceso denegado a este pedido")
-            });
-        }
-        // Evitar que cambien el franquiciaId inyectando datos en req.body
-        if (req.user.role !== 'admin') {
-            req.body.franquiciaId = req.user.franquiciaId;
-        }
-        const nuevoEstado = req.body.estado;
-
-        // Bloquear transiciones de estado inválidas para operarios
-        if (req.user.role !== 'admin') {
-            if (nuevoEstado && !['pendiente', 'cancelado'].includes(nuevoEstado)) {
-                return res.format({
-                    json: () => res.status(403).json({ error: "Operación inválida: Solo los administradores pueden pasar pedidos a 'En Proceso' o 'Completado'." }),
-                    html: () => res.status(403).send("Operación inválida: Solo los administradores pueden pasar pedidos a 'En Proceso' o 'Completado'.")
-                });
-            }
-        }
-
-        if (pedidoAntiguo.estado !== 'cancelado' && nuevoEstado === 'cancelado') {
-            for (let item of pedidoAntiguo.productos) {
-                await Producto.findByIdAndUpdate(item.productoId, {
-                    $inc: { stock: item.cantidad }
-                }, { returnDocument: 'after' }); // Corrección de Warning de Mongoose
-            }
-        }
-
-        if (pedidoAntiguo.estado === 'cancelado' && nuevoEstado !== 'cancelado') {
-            for (let item of pedidoAntiguo.productos) {
-                await Producto.findByIdAndUpdate(item.productoId, {
-                    $inc: { stock: -item.cantidad }
-                }, { returnDocument: 'after' });
-            }
-        }
-
-        const updatedPedido = await Pedido.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
-        res.format({
-            json: () => res.json(updatedPedido),
-            html: () => res.redirect('/pedidos')
-        });
-    } catch (error) {
-        res.status(500).send("Error interno del servidor");
+    if (!pedidoAntiguo) {
+      return res.status(404).send("Pedido no encontrado");
     }
+
+    if (!puedeAcceder(req, pedidoAntiguo)) {
+      return res.status(403).send("Acceso denegado a este pedido");
+    }
+
+    if (!esAdmin(req) && getFranquiciaUsuario(req)) {
+      req.body.franquiciaId = getFranquiciaUsuario(req);
+    }
+
+    const nuevoEstado = req.body.estado;
+
+    if (
+      !esAdmin(req) &&
+      nuevoEstado &&
+      !["pendiente", "cancelado"].includes(nuevoEstado)
+    ) {
+      return res
+        .status(403)
+        .send("Solo los administradores pueden pasar pedidos a En Proceso o Completado.");
+    }
+
+    if (pedidoAntiguo.estado !== "cancelado" && nuevoEstado === "cancelado") {
+      for (const item of pedidoAntiguo.productos || []) {
+        await Producto.findByIdAndUpdate(item.productoId, {
+          $inc: { stock: item.cantidad }
+        });
+      }
+    }
+
+    if (pedidoAntiguo.estado === "cancelado" && nuevoEstado !== "cancelado") {
+      for (const item of pedidoAntiguo.productos || []) {
+        await Producto.findByIdAndUpdate(item.productoId, {
+          $inc: { stock: -item.cantidad }
+        });
+      }
+    }
+
+    let updatedPedido;
+
+    if (typeof Pedido.update === "function") {
+      updatedPedido = Pedido.update(req.params.id, req.body);
+    } else if (typeof Pedido.findByIdAndUpdate === "function") {
+      updatedPedido = await Pedido.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true
+      });
+    }
+
+    if (!updatedPedido) {
+      return res.status(404).send("Pedido no encontrado");
+    }
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("pedidoActualizado", {
+        pedidoId: req.params.id,
+        estado: nuevoEstado
+      });
+    }
+
+    res.format({
+      json: () => res.json(updatedPedido),
+      html: () => res.redirect("/pedidos")
+    });
+  } catch (error) {
+    console.error("Error al actualizar pedido:", error);
+    res.status(500).send("Error interno del servidor");
+  }
 };
 
+// ELIMINAR PEDIDO
 const deletePedido = async (req, res) => {
-    try {
-        // Buscar primero para verificar propiedad antes de borrar
-        const pedido = await Pedido.findById(req.params.id);
-        if (!pedido) return res.status(404).json({ error: "Pedido no encontrado" });
-        if (req.user.role !== 'admin' && pedido.franquiciaId.toString() !== req.user.franquiciaId.toString()) {
-            return res.format({
-                json: () => res.status(403).json({ error: "Acceso denegado a este pedido" }),
-                html: () => res.status(403).send("Acceso denegado a este pedido")
-            });
-        }
-        await Pedido.findByIdAndDelete(req.params.id);
+  try {
+    const pedido = await obtenerPedidoPorId(req.params.id);
 
-        res.format({
-            json: () => res.status(204).send(),
-            html: () => res.redirect('/pedidos')
-        });
-    } catch (error) {
-        res.status(500).send("Error interno");
+    if (!pedido) {
+      return res.status(404).send("Pedido no encontrado");
     }
+
+    if (!puedeAcceder(req, pedido)) {
+      return res.status(403).send("Acceso denegado a este pedido");
+    }
+
+    let deleted = false;
+
+    if (typeof Pedido.delete === "function") {
+      deleted = Pedido.delete(req.params.id);
+    } else if (typeof Pedido.findByIdAndDelete === "function") {
+      deleted = await Pedido.findByIdAndDelete(req.params.id);
+    }
+
+    if (!deleted) {
+      return res.status(404).send("Pedido no encontrado");
+    }
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("pedidoEliminado", {
+        pedidoId: req.params.id
+      });
+    }
+
+    res.format({
+      json: () => res.status(204).send(),
+      html: () => res.redirect("/pedidos")
+    });
+  } catch (error) {
+    console.error("Error al eliminar pedido:", error);
+    res.status(500).send("Error interno");
+  }
 };
 
-module.exports = { getAllPedidos, getPedidoById, renderNewForm, renderEditForm, createPedido, updatePedido, deletePedido };
+module.exports = {
+  getAllPedidos,
+  getPedidoById,
+  renderNewForm,
+  renderEditForm,
+  createPedido,
+  updatePedido,
+  deletePedido
+};

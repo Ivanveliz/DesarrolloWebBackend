@@ -14,7 +14,7 @@ const getAllEmployees = async (req, res) => {
                 res.status(200).json({ employees }),
 
             'text/html': () =>
-                res.render('index', { employees })
+                res.render('empleados', { employees })
 
         });
 
@@ -131,7 +131,7 @@ const createEmployee = async (req, res) => {
                 res.status(201).json(newEmployee),
 
             'text/html': () =>
-                res.redirect('/')
+                res.redirect('/empleados')
 
         });
 
@@ -181,7 +181,7 @@ const updateEmployee = async (req, res) => {
                 res.status(200).json(updatedEmployee),
 
             'text/html': () =>
-                res.redirect('/')
+                res.redirect('/empleados')
 
         });
 
@@ -216,7 +216,7 @@ const deleteEmployee = async (req, res) => {
                 res.status(204).send(),
 
             'text/html': () =>
-                res.redirect('/')
+                res.redirect('/empleados')
 
         });
 

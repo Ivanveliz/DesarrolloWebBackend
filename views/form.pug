@@ -4,32 +4,43 @@ block content
   section.form-card
     h2= isEdit ? 'Editar Empleado' : 'Registrar Nuevo Empleado'
     
-    - const actionUrl = isEdit ? `/${employee._id}?_method=PUT` : '/'
+    - const employeeId = employee && (employee._id || employee.id)
+    - const actionUrl = isEdit && employeeId ? `/empleados/${employeeId}?_method=PUT` : '/empleados'
     
     form(action=actionUrl, method="POST")
       div.grid
         label Nombre
-          input(type="text", name="name", required, value=(isEdit ? employee.name : ''))
+          input(type="text", name="name", required, value=(isEdit && employee ? employee.name : ''))
+
         label Apellido
-          input(type="text", name="surname", required, value=(isEdit ? employee.surname : ''))
+          input(type="text", name="surname", required, value=(isEdit && employee ? employee.surname : ''))
+
       label Documento (DNI)
-        input(type="text", name="dni", required, value=(isEdit ? employee.dni : ''))
+        input(type="text", name="dni", required, value=(isEdit && employee ? employee.dni : ''))
+
       label Email
-        input(type="email", name="email", required, value=(isEdit ? employee.email : ''))
+        input(type="email", name="email", required, value=(isEdit && employee ? employee.email : ''))
+
       label Contraseña
-        input(type="password", name="password", required, value=(isEdit ? employee.password : ''))
+        if isEdit
+          input(type="password", name="password", placeholder="Dejar vacío para no cambiar la contraseña")
+        else
+          input(type="password", name="password", required)
+
       div.grid
         label Puesto
           select(name="role", required)
             option(value="", disabled, selected=!isEdit) Selecciona un rol
-            option(value="admin", selected=(isEdit && employee.role === 'admin')) Admin
-            option(value="operario", selected=(isEdit && employee.role === 'operario')) Operario
+            option(value="admin", selected=(isEdit && employee && employee.role === 'admin')) Admin
+            option(value="operario", selected=(isEdit && employee && employee.role === 'operario')) Operario
+
         label Turno
           select(name="shift", required)
             option(value="", disabled, selected=!isEdit) Selecciona un turno
-            option(value="Mañana", selected=(isEdit && employee.shift === 'Mañana')) Mañana
-            option(value="Tarde", selected=(isEdit && employee.shift === 'Tarde')) Tarde
-            option(value="Noche", selected=(isEdit && employee.shift === 'Noche')) Noche
+            option(value="Mañana", selected=(isEdit && employee && employee.shift === 'Mañana')) Mañana
+            option(value="Tarde", selected=(isEdit && employee && employee.shift === 'Tarde')) Tarde
+            option(value="Noche", selected=(isEdit && employee && employee.shift === 'Noche')) Noche
+
       .form-actions
         button(type="submit", class="btn btn-primary")= isEdit ? 'Guardar Cambios' : 'Crear Empleado'
-        a(href="/", class="btn btn-secondary btn-sm") Cancelar
+        a(href="/empleados", class="btn btn-secondary btn-sm") Cancelar

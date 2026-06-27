@@ -1,110 +1,46 @@
 [
   {
-    "id": 2,
-    "franquiciaId": 2,
+    "id": 8,
+    "franquiciaId": "6a1218b4913c75f879611d0a",
     "productos": [
       {
-        "productoId": 4,
-        "cantidad": 10
+        "productoId": "6a3a15b9a414ff48a3e65160",
+        "cantidad": "4"
       },
       {
-        "productoId": 2,
-        "cantidad": 25
+        "productoId": "6a3a182da414ff48a3e65161",
+        "cantidad": "8"
+      }
+    ],
+    "estado": "completado",
+    "fecha": "2026-06-27T22:24:53.429Z"
+  },
+  {
+    "id": 9,
+    "franquiciaId": "6a12463280642d9d4d7a1327",
+    "productos": [
+      {
+        "productoId": "6a3a182da414ff48a3e65161",
+        "cantidad": 4
       }
     ],
     "estado": "pendiente",
-    "fecha": "2026-04-17T02:15:08.626Z"
+    "fecha": "2026-06-27T22:33:07.734Z"
   },
   {
-    "id": 3,
-    "franquiciaId": 2,
+    "id": 10,
+    "franquiciaId": "6a137f8f7d76e48bfede18c4",
     "productos": [
       {
-        "productoId": 4,
-        "cantidad": 10
+        "productoId": "6a3a15b9a414ff48a3e65160",
+        "cantidad": "4"
       },
       {
-        "productoId": 2,
-        "cantidad": 25
-      }
-    ],
-    "estado": "pendiente",
-    "fecha": "2026-04-17T02:15:08.626Z"
-  },
-  {
-    "id": 3,
-    "franquiciaId": 2,
-    "productos": [
-      {
-        "productoId": 4,
-        "cantidad": 10
-      },
-      {
-        "productoId": 2,
-        "cantidad": 25
-      }
-    ],
-    "estado": "pendiente",
-    "fecha": "2026-04-17T02:15:08.626Z"
-  },
-  {
-    "id": 4,
-    "franquiciaId": 2,
-    "productos": [
-      {
-        "productoId": 2,
-        "cantidad": 60
-      },
-      {
-        "productoId": 3,
-        "cantidad": 12
-      }
-    ],
-    "estado": "aprobado",
-    "fecha": "2026-04-17T02:15:08.626Z"
-  },
-  {
-    "id": 5,
-    "franquiciaId": 3,
-    "productos": [
-      {
-        "productoId": 1,
-        "cantidad": 33
-      },
-      {
-        "productoId": 2,
-        "cantidad": 18
+        "productoId": "6a3da66056f3f100f1c9e16f",
+        "cantidad": "13"
       }
     ],
     "estado": "cancelado",
-    "fecha": "2026-04-17T02:15:08.626Z"
-  },
-  {
-    "id": 6,
-    "franquiciaId": 1,
-    "productos": [
-      {
-        "productoId": 1,
-        "cantidad": 22
-      },
-      {
-        "productoId": 2,
-        "cantidad": 45
-      }
-    ],
-    "estado": "pendiente",
-    "fecha": "2026-04-17T02:15:08.626Z"
-  },
-  {
-    "id": 7,
-    "franquiciaId": 10,
-    "productos": [
-      {
-        "productoId": 1,
-        "cantidad": 100
-      }
-    ],
-    "estado": "pendiente",
-    "fecha": "2026-04-19T23:05:28.157Z"
+    "fecha": "2026-06-27T22:38:41.790Z"
   }
 ]

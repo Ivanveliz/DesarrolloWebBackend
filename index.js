@@ -53,17 +53,14 @@ app.use(session({
 }));
 
 // --- Rutas ---
-app.use("/login", loginRoutes);
-app.get('/logout', loginController.logout);
-
 app.use("/franquicias", authMiddleware, franquiciaRoutes);
 app.use("/pedidos", authMiddleware, pedidoRoutes);
 app.use("/productos", authMiddleware, productoRoutes);
 
 app.get("/", authMiddleware, (req, res) => res.render("inicio"));
+
 app.use("/empleados", authMiddleware, rutasViewsFile);
 app.use("/empleados", authMiddleware, employeeRoutes);
-
 
 
 
