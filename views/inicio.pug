@@ -1,0 +1,54 @@
+extends layout
+
+block nav
+
+block content
+  section.page-header
+    div.header-title
+      h2 Bienvenido al panel administrativo
+      p Acceso rápido a pedidos, productos, franquicias y empleados.
+
+  section.dashboard-grid
+    article.dashboard-card.card-highlight
+      .dashboard-card-header
+        span.dashboard-card-icon.pedidos
+          svg(width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg")
+            path(d="M7 6H17C18.1046 6 19 6.89543 19 8V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V8C5 6.89543 5.89543 6 7 6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M9 11H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M9 15H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+        h3 Pedidos
+      p Gestionar pedidos de franquicias con facilidad.
+      a(href="/pedidos", class="btn btn-primary btn-sm", aria-label="Ver pedidos", title="Ver pedidos") Ver
+
+    article.dashboard-card.card-highlight
+      .dashboard-card-header
+        span.dashboard-card-icon.productos
+          svg(width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg")
+            path(d="M5 8L12 4L19 8V16C19 17.1046 18.1046 18 17 18H7C5.89543 18 5 17.1046 5 16V8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M3 8H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M8 12H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+        h3 Productos
+      p Administrar el catálogo, precios y stock disponible.
+      a(href="/productos", class="btn btn-primary btn-sm", aria-label="Ver productos", title="Ver productos") Ver
+
+    article.dashboard-card.card-highlight
+      .dashboard-card-header
+        span.dashboard-card-icon.franquicias
+          svg(width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg")
+            path(d="M3 21V8L12 3L21 8V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M7 21V12H17V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+        h3 Franquicias
+      p Registrar franquicias y consultar datos comerciales.
+      a(href="/franquicias", class="btn btn-primary btn-sm", aria-label="Ver franquicias", title="Ver franquicias") Ver
+
+    if user && user.role === 'admin'
+      article.dashboard-card.card-highlight
+        .dashboard-card-header
+          span.dashboard-card-icon.empleados
+            svg(width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg")
+              path(d="M8 19C8 16.7909 9.79086 15 12 15C14.2091 15 16 16.7909 16 19V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+              path(d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+        h3 Empleados
+        p Revisar empleados y gestionar permisos de acceso.
+        a(href="/empleados", class="btn btn-primary btn-sm", aria-label="Ver empleados", title="Ver empleados") Ver
+  // No additional scripts needed for this dashboard view.

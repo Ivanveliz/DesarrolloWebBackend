@@ -1,0 +1,25 @@
+extends layout
+
+block content
+  section.form-card
+    h2= isEdit ? 'Editar Producto' : 'Crear Nuevo Producto'
+    
+    - const actionUrl = isEdit ? `/productos/${producto._id}?_method=PUT` : '/productos'
+    
+    form(action=actionUrl, method="POST")
+      label Nombre del Producto
+        input(type="text", name="nombre", required, value=(isEdit ? producto.nombre : ''))
+      
+      label Categoría
+        input(type="text", name="categoria", required, value=(isEdit ? producto.categoria : ''))
+      
+      div.grid
+        label Precio
+          input(type="number", name="precio", step="0.01", min="0", required, value=(isEdit ? producto.precio : ''))
+        
+        label Stock Disponible
+          input(type="number", name="stock", min="0", required, value=(isEdit ? producto.stock : ''))
+      
+      .form-actions
+        button(type="submit", class="btn btn-primary")= isEdit ? 'Guardar Cambios' : 'Crear Producto'
+        a(href="/productos", class="btn btn-secondary btn-sm") Cancelar

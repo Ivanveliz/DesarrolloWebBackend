@@ -7,14 +7,16 @@ html(lang="es")
     link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css")
     link(rel="stylesheet", href="/css/styles.css")
   body
-    main.container
-      section(style="max-width: 380px; margin: 4rem auto;")
+    main.container.login-shell
+      section.login-card
         h2 Iniciar sesión
+        p.subtitle Accede al sistema administrativo de la panadería.
         if error
-          p(style="color: red;")= error
+          p.message-error= error
         form(action="/login", method="POST")
           label Email
             input(type="email", name="email", required, value=email)
           label Contraseña
             input(type="password", name="password", required)
-          button(type="submit") Entrar
+          .form-actions
+            button(type="submit", class="btn btn-primary") Entrar
