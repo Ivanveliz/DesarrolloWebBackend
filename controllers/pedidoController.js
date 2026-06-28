@@ -38,8 +38,8 @@ function puedeAcceder(req, pedido) {
 
   const franquiciaUsuario = getFranquiciaUsuario(req);
 
-  // Si no hay usuario/franquicia cargado, no rompemos la app.
-  if (!franquiciaUsuario) return true;
+  // Si no hay franquicia cargada en el usuario, no permitimos ver pedidos ajenos.
+  if (!franquiciaUsuario) return false;
 
   return getIdFranquiciaPedido(pedido) === valorId(franquiciaUsuario);
 }
@@ -66,24 +66,22 @@ function normalizarProductos(productos) {
 }
 
 async function obtenerTodosLosPedidos() {
-  if (typeof Pedido.getAll === "function") {
-    return Pedido.getAll();
-  }
-
   if (typeof Pedido.find === "function") {
-    return await Pedido.find().lean();
+    return await Pedido.find()
+      .populate("franquiciaId")
+      .populate("productos.productoId")
+      .lean();
   }
 
   return [];
 }
 
 async function obtenerPedidoPorId(id) {
-  if (typeof Pedido.getById === "function") {
-    return Pedido.getById(id);
-  }
-
   if (typeof Pedido.findById === "function") {
-    return await Pedido.findById(id).lean();
+    return await Pedido.findById(id)
+      .populate("franquiciaId")
+      .populate("productos.productoId")
+      .lean();
   }
 
   return null;
@@ -127,11 +125,19 @@ async function agregarNombreFranquicia(pedidos) {
 const getAllPedidos = async (req, res) => {
   try {
     let pedidos = await obtenerTodosLosPedidos();
+
+    // Si es admin ve todos. Si es operario, solo ve los pedidos de su franquicia.
+    pedidos = pedidos.filter((pedido) => puedeAcceder(req, pedido));
+
     pedidos = await agregarNombreFranquicia(pedidos);
 
-    res.render("pedidos", {
-      title: "Pedidos",
-      pedidos
+    res.format({
+      json: () => res.json(pedidos),
+      html: () =>
+        res.render("pedidos", {
+          title: "Pedidos",
+          pedidos
+        })
     });
   } catch (error) {
     console.error("Error al obtener pedidos:", error);
@@ -139,6 +145,7 @@ const getAllPedidos = async (req, res) => {
   }
 };
 
+// VER DETALLE
 // VER DETALLE
 const getPedidoById = async (req, res) => {
   try {
@@ -154,6 +161,20 @@ const getPedidoById = async (req, res) => {
 
     const pedidosConFranquicia = await agregarNombreFranquicia([pedido]);
     pedido = pedidosConFranquicia[0];
+
+    // Buscamos todos los pedidos que puede ver este usuario para calcular el número visible
+    let todosLosPedidos = await obtenerTodosLosPedidos();
+
+    todosLosPedidos = todosLosPedidos.filter((p) => puedeAcceder(req, p));
+
+    const indicePedido = todosLosPedidos.findIndex((p) => {
+      const idPedidoLista = String(p._id || p.id || "");
+      const idPedidoActual = String(pedido._id || pedido.id || "");
+
+      return idPedidoLista === idPedidoActual;
+    });
+
+    pedido.numeroPedido = indicePedido >= 0 ? indicePedido + 1 : null;
 
     res.format({
       json: () => res.json(pedido),
@@ -172,12 +193,21 @@ const getPedidoById = async (req, res) => {
 // FORMULARIO NUEVO
 const renderNewForm = async (req, res) => {
   try {
-    const filtroFranquicia =
-      esAdmin(req) || !getFranquiciaUsuario(req)
-        ? {}
-        : { _id: getFranquiciaUsuario(req) };
+    let franquicias = [];
 
-    const franquicias = await Franquicia.find(filtroFranquicia).lean();
+    // Admin ve todas, operario solo la suya
+    if (esAdmin(req)) {
+      franquicias = await Franquicia.find().lean();
+    } else {
+      const franquiciaUsuario = getFranquiciaUsuario(req);
+
+      if (!franquiciaUsuario) {
+        return res.status(403).send("No tenés una franquicia asignada para crear pedidos.");
+      }
+
+      franquicias = await Franquicia.find({ _id: franquiciaUsuario }).lean();
+    }
+
     const productos = await Producto.find().lean();
 
     res.render("pedidoForm", {
@@ -209,12 +239,21 @@ const renderEditForm = async (req, res) => {
     const pedidosConFranquicia = await agregarNombreFranquicia([pedido]);
     pedido = pedidosConFranquicia[0];
 
-    const filtroFranquicia =
-      esAdmin(req) || !getFranquiciaUsuario(req)
-        ? {}
-        : { _id: getFranquiciaUsuario(req) };
+    let franquicias = [];
 
-    const franquicias = await Franquicia.find(filtroFranquicia).lean();
+    // Admin ve todas, operario solo la suya
+    if (esAdmin(req)) {
+      franquicias = await Franquicia.find().lean();
+    } else {
+      const franquiciaUsuario = getFranquiciaUsuario(req);
+
+      if (!franquiciaUsuario) {
+        return res.status(403).send("No tenés una franquicia asignada.");
+      }
+
+      franquicias = await Franquicia.find({ _id: franquiciaUsuario }).lean();
+    }
+
     const productos = await Producto.find().lean();
 
     res.render("pedidoForm", {
@@ -235,7 +274,7 @@ const createPedido = async (req, res) => {
   try {
     const franquiciaId = esAdmin(req)
       ? req.body.franquiciaId
-      : getFranquiciaUsuario(req) || req.body.franquiciaId;
+      : getFranquiciaUsuario(req);
 
     const productos = normalizarProductos(req.body.productos);
 
@@ -276,7 +315,7 @@ const createPedido = async (req, res) => {
 
     for (const item of productos) {
       await Producto.findByIdAndUpdate(item.productoId, {
-        $inc: { stock: -item.cantidad }
+        $inc: { stock: -item.cantidad } // Resta la cantidad
       });
     }
 
@@ -320,16 +359,25 @@ const updatePedido = async (req, res) => {
       return res.status(404).send("Pedido no encontrado");
     }
 
+    // Validar que el operario sea dueño de este pedido
     if (!puedeAcceder(req, pedidoAntiguo)) {
       return res.status(403).send("Acceso denegado a este pedido");
     }
 
-    if (!esAdmin(req) && getFranquiciaUsuario(req)) {
-      req.body.franquiciaId = getFranquiciaUsuario(req);
+    // Evitar que cambien el franquiciaId inyectando datos en req.body
+    if (!esAdmin(req)) {
+      const franquiciaUsuario = getFranquiciaUsuario(req);
+
+      if (!franquiciaUsuario) {
+        return res.status(403).send("No tenés una franquicia asignada.");
+      }
+
+      req.body.franquiciaId = franquiciaUsuario;
     }
 
     const nuevoEstado = req.body.estado;
 
+    // Bloquear transiciones de estado inválidas para operarios
     if (
       !esAdmin(req) &&
       nuevoEstado &&
@@ -337,10 +385,10 @@ const updatePedido = async (req, res) => {
     ) {
       return res
         .status(403)
-        .send("Solo los administradores pueden pasar pedidos a En Proceso o Completado.");
+        .send("Operación inválida: Solo los administradores pueden pasar pedidos a 'En Proceso' o 'Completado'.");
     }
 
-    if (pedidoAntiguo.estado !== "cancelado" && nuevoEstado === "cancelado") {
+    if (nuevoEstado && pedidoAntiguo.estado !== "cancelado" && nuevoEstado === "cancelado") {
       for (const item of pedidoAntiguo.productos || []) {
         await Producto.findByIdAndUpdate(item.productoId, {
           $inc: { stock: item.cantidad }
@@ -348,7 +396,7 @@ const updatePedido = async (req, res) => {
       }
     }
 
-    if (pedidoAntiguo.estado === "cancelado" && nuevoEstado !== "cancelado") {
+    if (nuevoEstado && pedidoAntiguo.estado === "cancelado" && nuevoEstado !== "cancelado") {
       for (const item of pedidoAntiguo.productos || []) {
         await Producto.findByIdAndUpdate(item.productoId, {
           $inc: { stock: -item.cantidad }
@@ -392,6 +440,7 @@ const updatePedido = async (req, res) => {
 // ELIMINAR PEDIDO
 const deletePedido = async (req, res) => {
   try {
+    // Buscar primero para verificar propiedad antes de borrar
     const pedido = await obtenerPedidoPorId(req.params.id);
 
     if (!pedido) {

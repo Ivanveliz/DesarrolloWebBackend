@@ -4,19 +4,26 @@ html(lang="es")
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Login - Panadería
+
+    //- Librería de estilos para no escribir mucho CSS
     link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css")
     link(rel="stylesheet", href="/css/styles.css")
+
   body
     main.container.login-shell
       section.login-card
         h2 Iniciar sesión
         p.subtitle Accede al sistema administrativo de la panadería.
+
         if error
           p.message-error= error
+
         form(action="/login", method="POST")
           label Email
-            input(type="email", name="email", required, value=email)
+            input(type="email", name="email", required, value=(email || ""))
+
           label Contraseña
             input(type="password", name="password", required)
+
           .form-actions
             button(type="submit", class="btn btn-primary") Entrar

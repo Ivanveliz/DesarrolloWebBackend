@@ -1,0 +1,72 @@
+extends layout
+
+block content
+  section.form-card
+    h2= isEdit ? 'Editar Empleado' : 'Registrar Nuevo Empleado'
+
+    if error
+      p.message-error= error
+    
+    //- Si isEdit es true enviará método PUT para actualizar, sino POST para crear
+    - const employeeId = employee && (employee._id || employee.id)
+    - const actionUrl = isEdit && employeeId ? `/empleados/${employeeId}?_method=PUT` : '/empleados'
+    - const selectedRole = employee && employee.role ? employee.role : ''
+    - const selectedShift = employee && employee.shift ? employee.shift : ''
+    - const franquiciaSeleccionada = employee && employee.franquiciaId ? String(employee.franquiciaId._id || employee.franquiciaId.id || employee.franquiciaId) : ''
+    
+    form(action=actionUrl, method="POST")
+      div.grid
+        label Nombre
+          input(type="text", name="name", required, value=(employee ? employee.name : ''))
+
+        label Apellido
+          input(type="text", name="surname", required, value=(employee ? employee.surname : ''))
+
+      label Documento (DNI)
+        input(
+          type="text",
+          name="dni",
+          required,
+          inputmode="numeric",
+          pattern="[0-9]{7,8}",
+          title="El DNI debe tener solo números, entre 7 y 8 dígitos.",
+          placeholder="Ej: 35123456",
+          value=(employee ? employee.dni : '')
+        )
+        small Solo números, sin puntos ni letras.
+
+      label Email
+        input(type="email", name="email", required, value=(employee ? employee.email : ''))
+
+      label Contraseña
+        if isEdit
+          input(type="password", name="password", placeholder="Dejar vacío para no cambiar la contraseña")
+        else
+          input(type="password", name="password", required)
+
+      div.grid
+        label Puesto
+          select(name="role", required)
+            option(value="", disabled, selected=(!selectedRole)) Selecciona un rol
+            option(value="admin", selected=(selectedRole === 'admin')) Admin
+            option(value="operario", selected=(selectedRole === 'operario')) Operario
+
+        label Turno
+          select(name="shift", required)
+            option(value="", disabled, selected=(!selectedShift)) Selecciona un turno
+            option(value="Mañana", selected=(selectedShift === 'Mañana')) Mañana
+            option(value="Tarde", selected=(selectedShift === 'Tarde')) Tarde
+            option(value="Noche", selected=(selectedShift === 'Noche')) Noche
+
+      label Franquicia / Sucursal
+        select(name="franquiciaId")
+          option(value="", selected=(!franquiciaSeleccionada)) Sin franquicia / Administrador
+          if franquicias && franquicias.length
+            each franquicia in franquicias
+              - const idFranquicia = String(franquicia._id || franquicia.id)
+              option(value=idFranquicia, selected=(franquiciaSeleccionada === idFranquicia))= franquicia.razonSocial
+        small Si el empleado es operario, debe estar vinculado a una franquicia. Si es administrador, puede quedar sin franquicia.
+
+      .form-actions
+        button(type="submit", class="btn btn-primary")= isEdit ? 'Guardar Cambios' : 'Crear Empleado'
+        a(href="/empleados", class="btn btn-secondary btn-sm") Cancelar

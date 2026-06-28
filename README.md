@@ -1,28 +1,35 @@
-# Sistema de Gestión de Empleados - Panadería MVC
+# Sistema de Gestión de Panadería - Backend MVC
 
-Proyecto de backend para la administración de empleados, login y franquicias de una panadería.
+Proyecto backend para una panadería que administra empleados, franquicias, productos y pedidos con roles y autenticación.
 
 ---
 
 ## Tecnologías usadas
 - Node.js
-- Express
+- Express 5
 - MongoDB
 - Mongoose
 - Pug
+- Socket.IO
+- JWT
+- bcrypt
+- cookie-parser
 - method-override
-- Pico CSS (vía CDN)
+- Jest
+- nodemon
 
 ---
 
 ## Qué hace el proyecto
-- Login simple con MongoDB
-- Autenticación por cookie
-- Logout
+- Login con email y contraseña
+- Autenticación por JWT en cookie `jwt`
+- Roles `admin` y `operario`
 - CRUD de empleados
-- Módulo de franquicias protegido para admin
-- Vistas con Pug
-- Rutas protegidas con middleware
+- CRUD de franquicias (solo admin)
+- CRUD de productos (solo admin para crear/editar/borrar)
+- Gestión de pedidos con stock y franquicia asociada
+- Control de accesos según rol y franquicia
+- Notificaciones de pedidos con Socket.IO
 - Admin inicial creado automáticamente en MongoDB
 
 ---
@@ -32,163 +39,225 @@ Proyecto de backend para la administración de empleados, login y franquicias de
 DesarrolloWebBackend/
 ├── index.js
 ├── package.json
+├── pnpm-lock.yaml
 ├── README.md
 ├── config/
-│   └── db.js
+│   ├── bbdd.json
+│   ├── db.js
+│   ├── employees.json
+│   ├── pedidos.json
+│   └── productos.json
 ├── controllers/
 │   ├── employeeController.js
-│   └── loginController.js
+│   ├── franquiciaController.js
+│   ├── loginController.js
+│   ├── pedidoController.js
+│   └── productoController.js
 ├── middleware/
-│   └── authMiddleware.js
+│   ├── authMiddleware.js
+│   └── roleMiddleware.js
 ├── models/
 │   ├── Employee.js
-│   └── Franquicia.js
+│   ├── Franquicia.js
+│   ├── Pedido.js
+│   ├── Person.js
+│   └── Producto.js
+├── public/
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       └── pedidosSocket.js
 ├── routes/
 │   ├── employeeRoutes.js
 │   ├── franquiciaRoutes.js
 │   ├── loginRoutes.js
+│   ├── pedidoRoutes.js
+│   ├── productoRoutes.js
 │   └── routesViews.js
-├── views/
-│   ├── layout.pug
-│   ├── login.pug
-│   ├── index.pug
-│   ├── form.pug
-│   ├── franquicias.pug
-│   └── franquiciaForm.pug
-└── public/
-    └── css/
-        └── styles.css
+├── tests/
+│   ├── validarPedido.test.js
+│   └── validarStock.test.js
+├── utils/
+│   ├── validarPedido.js
+│   └── validarStock.js
+└── views/
+    ├── empleadoForm.pug
+    ├── empleados.pug
+    ├── franquiciaForm.pug
+    ├── franquicias.pug
+    ├── index.pug
+    ├── inicio.pug
+    ├── layout.pug
+    ├── login.pug
+    ├── pedidoDetalle.pug
+    ├── pedidoForm.pug
+    ├── pedidos.pug
+    ├── productoForm.pug
+    └── productos.pug
 ```
 
 ---
 
-## Cómo iniciar el proyecto
+## Configuración
 1. Instala dependencias:
 ```bash
-npm install
+pnpm install
 ```
-2. Crea archivo `.env` con tu conexión a MongoDB:
+2. Crea un archivo `.env` en la raíz con:
 ```env
 MONGO_URI=mongodb://localhost:27017/tu_basedatos
+JWT_SECRET=una_clave_secreta
+PORT=3000
 ```
-3. Inicia el servidor:
+3. Inicia el servidor en modo desarrollo:
 ```bash
-npm run dev
+pnpm dev
 ```
 4. Abre en el navegador:
 ```text
 http://localhost:3000/
 ```
 
+> Si no usas `pnpm`, puedes usar `npm install` y `npm run dev`, pero el proyecto está configurado con `pnpm`.
+
 ---
 
 ## Usuario admin automático
-Al iniciar la app se crea automáticamente este usuario si no existe en la base:
+Al iniciar la app se crea automáticamente un admin si no existe:
 - **email:** `admin@admin.com`
 - **password:** `1234`
 - **role:** `admin`
 
-Esto se hace en `config/db.js`.
+Esta lógica está en `config/db.js`. La contraseña se guarda hasheada con `bcrypt`.
 
 ---
 
-## Cómo funciona el login
-- `GET /login` muestra la pantalla de login separada.
-- `POST /login` busca en MongoDB un empleado con el `email` y `password` ingresados.
-- Si no existe, muestra error en la misma vista.
-- Si existe, guarda una cookie `user` y redirige al panel principal (`/`).
-- `GET /logout` borra la cookie y vuelve a `/login`.
+## Autenticación y autorización
+- El login crea un token JWT guardado en cookie `jwt`.
+- `authMiddleware.js` valida el token y agrega `req.user` y `res.locals.user`.
+- Las rutas protegidas requieren estar autenticado.
+- Solo `admin` puede acceder a `/franquicias`.
+- Solo `admin` puede crear, editar y borrar empleados y productos.
+- Los `operarios` pueden listar/ver pedidos de su propia franquicia y crear pedidos.
+
+---
+
+## Cómo funciona la protección de rutas
+- El middleware `authMiddleware.js` verifica que exista la cookie `jwt`.
+- Si no hay token válido, redirige al login en HTML o responde 401 en JSON.
+- Si el token es válido, decodifica el usuario y guarda los datos en `req.user`.
+- `res.locals.user` se usa para mostrar información del usuario en las vistas.
+- Las rutas de `/franquicias` solo permiten el rol `admin`.
+- El resto de rutas protegidas solo se accede cuando hay sesión activa.
 
 ---
 
 ## Rutas principales
 ### Login
-- `GET /login` → muestra formulario de login
+- `GET /login` → formulario de login
 - `POST /login` → procesa el login
 - `GET /logout` → cierra sesión
 
-### Empleados
-- `GET /` → lista empleados
-- `GET /nuevo` → formulario nuevo empleado
-- `GET /:id/editar` → formulario edición
-- `POST /` → crear empleado
-- `PUT /:id` → actualizar empleado
-- `DELETE /:id` → eliminar empleado
+### Inicio
+- `GET /` → pantalla principal protegida
 
-### Franquicias
-- `GET /franquicias` → lista franquicias (solo admin)
-- `GET /franquicias/nuevo` → nuevo registro (solo admin)
-- `POST /franquicias` → crear franquicia (solo admin)
-- `GET /franquicias/:id/editar` → editar franquicia (solo admin)
-- `PUT /franquicias/:id` → actualizar franquicia (solo admin)
-- `DELETE /franquicias/:id` → borrar franquicia (solo admin)
+### Empleados (`/empleados` - solo admin)
+- `GET /empleados` → lista empleados
+- `GET /empleados/nuevo` → formulario nuevo empleado
+- `GET /empleados/:id/editar` → formulario de edición
+- `POST /empleados` → crear empleado
+- `PUT /empleados/:id` → actualizar empleado
+- `DELETE /empleados/:id` → eliminar empleado
+
+### Franquicias (`/franquicias` - solo admin)
+- `GET /franquicias` → lista franquicias
+- `GET /franquicias/nuevo` → formulario de franquicia
+- `POST /franquicias` → crear franquicia
+- `GET /franquicias/:id/editar` → editar franquicia
+- `PUT /franquicias/:id` → actualizar franquicia
+- `DELETE /franquicias/:id` → borrar franquicia
+
+### Productos
+- `GET /productos` → lista productos
+- `GET /productos/nuevo` → formulario nuevo producto (admin)
+- `GET /productos/:id/editar` → editar producto (admin)
+- `GET /productos/:id` → ver producto
+- `POST /productos` → crear producto (admin)
+- `PUT /productos/:id` → actualizar producto (admin)
+- `DELETE /productos/:id` → borrar producto (admin)
 
 ### Pedidos
 - `GET /pedidos` → lista pedidos
-- `GET /pedidos/:id` → detalle pedido
-- `POST /pedidos/crear` → crear pedido
-
----
-
-## Cómo funciona la protección de rutas
-- `authMiddleware.js` revisa la cookie `user`.
-- Si no hay cookie, redirige a `/login`.
-- Si existe cookie, deja pasar.
-- Si la ruta es `/franquicias` y el rol no es `admin`, devuelve error 403.
+- `GET /pedidos/nuevo` → formulario nuevo pedido
+- `POST /pedidos` → crear pedido
+- `GET /pedidos/:id/editar` → editar pedido
+- `PUT /pedidos/:id` → actualizar pedido
+- `PATCH /pedidos/:id` → actualizar pedido
+- `DELETE /pedidos/:id` → eliminar pedido
+- `GET /pedidos/:id` → detalle del pedido
 
 ---
 
 ## Componentes del proyecto
 ### `index.js`
-- conecta la base de datos
-- configura Express
-- aplica `method-override`
-- carga rutas y middleware
+- Conecta a MongoDB usando `config/db.js`.
+- Configura Express, `cookie-parser`, `method-override`, `express.urlencoded` y rutas.
+- Inicializa Socket.IO y lo deja disponible con `app.set('io', io)`.
+- Define rutas públicas y protegidas.
 
 ### `config/db.js`
-- conecta a MongoDB con `mongoose.connect`
-- crea el admin inicial si no existe
+- Conecta a la base de datos MongoDB con `mongoose.connect`.
+- Crea un usuario admin inicial si no existe.
 
 ### `controllers/loginController.js`
-- maneja mostrar login, procesar login y logout
+- Muestra el formulario de login.
+- Verifica credenciales con `bcrypt`.
+- Genera JWT y lo guarda en cookie.
+- Limpia la cookie `jwt` en logout.
 
 ### `middleware/authMiddleware.js`
-- protege rutas con cookie `user`
-- controla acceso admin para franquicias
+- Valida la cookie JWT en cada petición protegida.
+- Agrega los datos del usuario a `req.user` y `res.locals.user`.
+- Bloquea acceso a `/franquicias` si el usuario no es admin.
+
+### `middleware/roleMiddleware.js`
+- `requireAdmin` asegura que solo admins realicen ciertas acciones.
+- `blockOperario` impide que operarios modifiquen datos restringidos.
 
 ### `models/Employee.js`
-- define el modelo de empleado en MongoDB
-- contiene campos: `name`, `surname`, `dni`, `role`, `shift`, `email`, `password`
+- Define el modelo `Employee` con contraseña hasheada.
+- Incluye campos como `name`, `surname`, `dni`, `role`, `shift`, `email`, `password` y `franquiciaId`.
 
-### `views/login.pug`
-- vista de login separada
-- no extiende `layout.pug`
-
-### `views/layout.pug`
-- layout del sistema principal con navbar
-- muestra botón `Cerrar sesión`
-
-### `views/index.pug`
-- lista empleados
-- muestra números simples `1, 2, 3...` en vez de `_id` largos
+### `controllers/pedidoController.js`
+- Gestiona creación, edición, listado y eliminación de pedidos.
+- Filtra pedidos según la franquicia del usuario.
+- Actualiza stock de productos y emite eventos por Socket.IO.
 
 ---
 
-## Notas importantes
-- El login es simple y no usa JWT ni bcrypt.
-- La sesión se guarda con una cookie básica.
-- El navbar y el sistema solo se ven si el usuario está autenticado.
-- El CRUD sigue funcionando igual.
+## Características destacadas
+- `Employee` utiliza `bcrypt` para hashear contraseñas.
+- `Pedido` conserva `productos` con `productoId` y `cantidad`.
+- Se actualiza el stock de `Producto` cuando se crea o cancela un pedido.
+- `Socket.IO` emite eventos de nuevo pedido, pedido actualizado y pedido eliminado.
+- `authMiddleware` valida JWT y bloquea acceso no autorizado.
+- `roleMiddleware` limita acciones de admin y operario.
+
+---
+
+## Notas
+- El proyecto usa `JWT` y `bcrypt`; no se trata de una autenticación simple sin seguridad.
+- Los datos completos de empleados se almacenan en MongoDB.
+- La cookie `jwt` es `httpOnly` y expira en 24 horas.
+- La app puede ejecutarse en `localhost:3000` por defecto.
 
 ---
 
 ## Resumen rápido
-- Login con MongoDB
-- Autenticación por cookie
-- Logout
-- CRUD de empleados
-- Módulo de franquicias para admin
-- Vistas en Pug
-- Rutas protegidas con middleware
-
-¡Listo! Ahora tu README refleja el estado actual del proyecto.
+- Backend para administración de panadería
+- Login con JWT y cookie segura
+- Roles `admin` y `operario`
+- CRUD de empleados, franquicias, productos y pedidos
+- Filtrado de pedidos por franquicia
+- Notificaciones en tiempo real con Socket.IO
+- Tests con Jest disponibles en `tests/`

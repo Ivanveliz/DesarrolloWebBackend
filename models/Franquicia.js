@@ -22,10 +22,13 @@ const franquiciaSchema = new mongoose.Schema({
         required: true
     },
 
-    correo: {
+        correo: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        lowercase: true,
+        trim: true,
+        match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Correo electrónico inválido.']
     },
 
     encargado: {

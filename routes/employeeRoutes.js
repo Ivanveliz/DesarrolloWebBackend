@@ -11,6 +11,11 @@ const {
   deleteEmployee
 } = require("../controllers/employeeController");
 
+const { requireAdmin } = require("../middleware/roleMiddleware");
+
+// Todo el módulo empleados queda solo para administradores
+router.use(requireAdmin);
+
 router.get("/", getAllEmployees);
 router.get("/nuevo", renderNewForm);
 router.post("/", createEmployee);

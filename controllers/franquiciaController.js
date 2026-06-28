@@ -1,25 +1,79 @@
 const Franquicia = require('../models/Franquicia');
 
+const validarCuit = (cuit) => {
+    return /^[0-9]{11}$/.test(String(cuit));
+};
+
+const renderizarFormularioConError = (res, isEdit, franquicia, error) => {
+    return res.status(400).format({
+        json: () => res.json({ error }),
+
+        html: () => res.render('franquiciaForm', {
+            isEdit,
+            franquicia,
+            error
+        }),
+
+        default: () => res.json({ error })
+    });
+};
+
 const getAllFranquicias = async (req, res) => {
     try {
 
         const franquicias = await Franquicia.find();
 
-        res.render('franquicias', { franquicias });
+        res.format({
+            json: () => res.json(franquicias),
+            html: () => res.render('franquicias', { franquicias })
+        });
 
     } catch (error) {
 
         console.log(error);
-        res.status(500).send('Error interno del servidor');
+        res.format({
+            json: () => res.status(500).json({ error: 'Error interno del servidor' }),
+            html: () => res.status(500).send('Error interno del servidor')
+        });
 
+    }
+};
+
+const getFranquiciaById = async (req, res) => {
+    try {
+        const franquicia = await Franquicia.findById(req.params.id);
+
+        if (!franquicia) {
+            return res.format({
+                json: () => res.status(404).json({ error: 'Franquicia no encontrada' }),
+                html: () => res.status(404).send('Franquicia no encontrada')
+            });
+        }
+
+        res.format({
+            json: () => res.json(franquicia),
+            html: () => res.render('franquiciaDetalle', { franquicia })
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        res.format({
+            json: () => res.status(500).json({ error: 'Error interno del servidor' }),
+            html: () => res.status(500).send('Error interno del servidor')
+        });
     }
 };
 
 const renderNewForm = (req, res) => {
 
-    res.render('franquiciaForm', {
-        isEdit: false,
-        franquicia: null
+    res.format({
+        json: () => res.json({ isEdit: false, franquicia: null }),
+        html: () => res.render('franquiciaForm', {
+            isEdit: false,
+            franquicia: null,
+            error: null
+        })
     });
 
 };
@@ -31,18 +85,28 @@ const renderEditForm = async (req, res) => {
         const franquicia = await Franquicia.findById(req.params.id);
 
         if (!franquicia) {
-            return res.status(404).send('Franquicia no encontrada');
+            return res.format({
+                json: () => res.status(404).json({ error: 'Franquicia no encontrada' }),
+                html: () => res.status(404).send('Franquicia no encontrada')
+            });
         }
 
-        res.render('franquiciaForm', {
-            isEdit: true,
-            franquicia
+        res.format({
+            json: () => res.json({ isEdit: true, franquicia }),
+            html: () => res.render('franquiciaForm', {
+                isEdit: true,
+                franquicia,
+                error: null
+            })
         });
 
     } catch (error) {
 
         console.log(error);
-        res.status(500).send('Error interno del servidor');
+        res.format({
+            json: () => res.status(500).json({ error: 'Error interno del servidor' }),
+            html: () => res.status(500).send('Error interno del servidor')
+        });
 
     }
 };
@@ -61,19 +125,38 @@ const createFranquicia = async (req, res) => {
             telefono
         } = req.body;
 
+        if (!validarCuit(cuit)) {
+            return renderizarFormularioConError(
+                res,
+                false,
+                req.body,
+                'CUIT incorrecto. Ingresá 11 números, sin letras, puntos ni guiones.'
+            );
+        }
+
         const existeCuit = await Franquicia.findOne({ cuit });
 
         if (existeCuit) {
-            return res.send('La entidad comercial/CUIT ya se encuentra registrada en la red');
+            return renderizarFormularioConError(
+                res,
+                false,
+                req.body,
+                'El CUIT ya se encuentra registrado.'
+            );
         }
 
         const existeCorreo = await Franquicia.findOne({ correo });
 
         if (existeCorreo) {
-            return res.send('El correo electrónico ya está asociado a otra franquicia');
+            return renderizarFormularioConError(
+                res,
+                false,
+                req.body,
+                'El correo electrónico ya está asociado a otra franquicia.'
+            );
         }
 
-        await Franquicia.create({
+        const nuevaFranquicia = await Franquicia.create({
             razonSocial,
             cuit,
             direccion,
@@ -83,12 +166,25 @@ const createFranquicia = async (req, res) => {
             telefono
         });
 
-        res.redirect('/franquicias?role=admin');
+        res.format({
+            json: () => res.status(201).json(nuevaFranquicia),
+            html: () => res.redirect('/franquicias')
+        });
 
     } catch (error) {
 
         console.log(error);
-        res.status(500).send('Error interno del servidor');
+
+        let mensaje = 'No se pudo crear la franquicia.';
+
+        if (error.code === 11000) {
+            mensaje = 'Ya existe una franquicia con ese CUIT o correo.';
+        }
+
+        res.format({
+            json: () => res.status(400).json({ error: mensaje }),
+            html: () => renderizarFormularioConError(res, false, req.body, mensaje)
+        });
 
     }
 };
@@ -109,6 +205,52 @@ const updateFranquicia = async (req, res) => {
             telefono
         } = req.body;
 
+        if (!validarCuit(cuit)) {
+            return renderizarFormularioConError(
+                res,
+                true,
+                {
+                    _id: id,
+                    ...req.body
+                },
+                'CUIT incorrecto. Ingresá 11 números, sin letras, puntos ni guiones.'
+            );
+        }
+
+        const existeCuit = await Franquicia.findOne({
+            cuit,
+            _id: { $ne: id }
+        });
+
+        if (existeCuit) {
+            return renderizarFormularioConError(
+                res,
+                true,
+                {
+                    _id: id,
+                    ...req.body
+                },
+                'El CUIT ya se encuentra registrado en otra franquicia.'
+            );
+        }
+
+        const existeCorreo = await Franquicia.findOne({
+            correo,
+            _id: { $ne: id }
+        });
+
+        if (existeCorreo) {
+            return renderizarFormularioConError(
+                res,
+                true,
+                {
+                    _id: id,
+                    ...req.body
+                },
+                'El correo electrónico ya está asociado a otra franquicia.'
+            );
+        }
+
         const updatedFranquicia = await Franquicia.findByIdAndUpdate(
             id,
             {
@@ -120,19 +262,46 @@ const updateFranquicia = async (req, res) => {
                 encargado,
                 telefono
             },
-            { new: true }
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
         if (!updatedFranquicia) {
-            return res.status(404).send('Franquicia no encontrada');
+            return res.format({
+                json: () => res.status(404).json({ error: 'Franquicia no encontrada' }),
+                html: () => res.status(404).send('Franquicia no encontrada')
+            });
         }
 
-        res.redirect('/franquicias?role=admin');
+        res.format({
+            json: () => res.json(updatedFranquicia),
+            html: () => res.redirect('/franquicias')
+        });
 
     } catch (error) {
 
         console.log(error);
-        res.status(500).send('Error interno del servidor');
+
+        let mensaje = 'No se pudo actualizar la franquicia.';
+
+        if (error.code === 11000) {
+            mensaje = 'Ya existe una franquicia con ese CUIT o correo.';
+        }
+
+        res.format({
+            json: () => res.status(400).json({ error: mensaje }),
+            html: () => renderizarFormularioConError(
+                res,
+                true,
+                {
+                    _id: req.params.id,
+                    ...req.body
+                },
+                mensaje
+            )
+        });
 
     }
 };
@@ -141,20 +310,34 @@ const deleteFranquicia = async (req, res) => {
 
     try {
 
-        await Franquicia.findByIdAndDelete(req.params.id);
+        const deleted = await Franquicia.findByIdAndDelete(req.params.id);
 
-        res.redirect('/franquicias?role=admin');
+        if (!deleted) {
+            return res.format({
+                json: () => res.status(404).json({ error: 'Franquicia no encontrada' }),
+                html: () => res.status(404).send('Franquicia no encontrada')
+            });
+        }
+
+        res.format({
+            json: () => res.json({ message: 'Franquicia eliminada correctamente', id: req.params.id }),
+            html: () => res.redirect('/franquicias')
+        });
 
     } catch (error) {
 
         console.log(error);
-        res.status(500).send('Error interno del servidor');
+        res.format({
+            json: () => res.status(500).json({ error: 'Error interno del servidor' }),
+            html: () => res.status(500).send('Error interno del servidor')
+        });
 
     }
 };
 
 module.exports = {
     getAllFranquicias,
+    getFranquiciaById,
     renderNewForm,
     renderEditForm,
     createFranquicia,

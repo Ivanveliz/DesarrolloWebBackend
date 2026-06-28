@@ -1,40 +1,59 @@
-
+const jwt = require('jsonwebtoken');
 
 //Un middleware es una función que se ejecuta ANTES de entrar a una ruta.
 //authMiddleware sirve para proteger el sistema. Si el usuario no tiene la cookie de autenticación, lo redirige al login. Si la tiene, le permite seguir y además le agrega la información del usuario a req.user para que esté disponible en las rutas.
-const parseCookies = (cookieHeader) => {
-    if (!cookieHeader) return {};
-    return cookieHeader.split(';').reduce((cookies, item) => {
-        const [key, value] = item.split('=');
-        if (!key || !value) return cookies;
-        cookies[key.trim()] = decodeURIComponent(value.trim());
-        return cookies;
-    }, {});
-};
+
+// const parseCookies = (cookieHeader) => {
+//     if (!cookieHeader) return {};
+//     return cookieHeader.split(';').reduce((cookies, item) => {
+//         const [key, value] = item.split('=');
+//         if (!key || !value) return cookies;
+//         cookies[key.trim()] = decodeURIComponent(value.trim());
+//         return cookies;
+//     }, {});
+// };
 
 const authMiddleware = (req, res, next) => {
-    const cookies = parseCookies(req.headers.cookie);
-    const userCookie = cookies.user;
+    // const cookies = parseCookies(req.headers.cookie);
+    // const userCookie = cookies.user;
 
-    if (!userCookie) {
-        return res.redirect('/login');
+    const token = req.cookies.jwt;
+
+    if (!token) {
+        return res.format({
+            json: () => res.status(401).json({ error: 'No autenticado. Por favor, inicia sesión.' }),
+            html: () => res.redirect('/login')
+        });
     }
 
-    let user;
     try {
-        user = JSON.parse(userCookie);
+        // user = JSON.parse(userCookie);
+
+        // Verificamos el token usando nuestra clave secreta
+        const decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Guardamos los datos decodificados para que estén disponibles en las rutas y vistas
+        req.user = decodedUser;
+        res.locals.user = decodedUser;
+
+        // Si intenta entrar a franquicias y no es admin, bloqueamos el acceso
+        if (req.baseUrl.startsWith('/franquicias') && decodedUser.role !== 'admin') {
+            return res.status(403).send('Acceso restringido: solo administradores pueden ingresar a franquicias.');
+        }
+
+        return next();
+
     } catch (error) {
-        return res.redirect('/login');
+        res.clearCookie('jwt');
+
+        return res.format({
+            json: () => res.status(401).json({ error: 'Sesión inválida.' }),
+            html: () => res.redirect('/login')
+        });
     }
 
-    req.user = user;
-    res.locals.user = user;
-
-    if (req.baseUrl.startsWith('/franquicias') && user.role !== 'admin') {
-        return res.status(403).send('Acceso restringido: solo administradores pueden ingresar a franquicias.');
-    }
-
-    return next();
+    // req.user = user;
+    // res.locals.user = user;
 };
 
 module.exports = authMiddleware;

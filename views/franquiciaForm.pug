@@ -4,7 +4,12 @@ block content
   section.form-card
     h2= isEdit ? 'Editar Franquicia' : 'Registrar Nueva Franquicia'
 
-    - const actionUrl = isEdit ? `/franquicias/${franquicia._id}?_method=PUT` : '/franquicias'
+    if error
+      p.message-error= error
+
+    //- Sacamos el role=admin ya que ahora tenemos JWT y el authMiddleware leyendo req.user.role, no necesitamos ensuciar las URLs
+    - const franquiciaId = franquicia && (franquicia._id || franquicia.id)
+    - const actionUrl = isEdit && franquiciaId ? `/franquicias/${franquiciaId}?_method=PUT` : '/franquicias'
 
     form(action=actionUrl, method="POST")
       label Razón Social (nombre comercial)
@@ -12,7 +17,7 @@ block content
           type="text",
           name="razonSocial",
           required,
-          value=(isEdit ? franquicia.razonSocial : '')
+          value=(isEdit && franquicia ? franquicia.razonSocial : '')
         )
 
       label CUIT
@@ -20,15 +25,20 @@ block content
           type="text",
           name="cuit",
           required,
-          value=(isEdit ? franquicia.cuit : '')
+          inputmode="numeric",
+          pattern="[0-9]{11}",
+          title="El CUIT debe tener 11 números, sin letras, puntos ni guiones.",
+          placeholder="Ej: 30712345678",
+          value=(isEdit && franquicia ? franquicia.cuit : '')
         )
+        small El CUIT debe tener 11 números, sin letras, puntos ni guiones.
 
       label Dirección Comercial
         input(
           type="text",
           name="direccion",
           required,
-          value=(isEdit ? franquicia.direccion : '')
+          value=(isEdit && franquicia ? franquicia.direccion : '')
         )
 
       label Localidad
@@ -36,7 +46,7 @@ block content
           type="text",
           name="localidad",
           required,
-          value=(isEdit ? franquicia.localidad : '')
+          value=(isEdit && franquicia ? franquicia.localidad : '')
         )
 
       label Correo Electrónico
@@ -44,7 +54,7 @@ block content
           type="email",
           name="correo",
           required,
-          value=(isEdit ? franquicia.correo : '')
+          value=(isEdit && franquicia ? franquicia.correo : '')
         )
 
       label Encargado
@@ -52,7 +62,7 @@ block content
           type="text",
           name="encargado",
           required,
-          value=(isEdit ? franquicia.encargado : '')
+          value=(isEdit && franquicia ? franquicia.encargado : '')
         )
 
       label Teléfono
@@ -60,7 +70,7 @@ block content
           type="text",
           name="telefono",
           required,
-          value=(isEdit ? franquicia.telefono : '')
+          value=(isEdit && franquicia ? franquicia.telefono : '')
         )
 
       .form-actions

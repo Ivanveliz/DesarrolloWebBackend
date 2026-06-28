@@ -715,4 +715,70 @@ tbody tr:hover {
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
+/* Ajustes finales para tablas y botones de acciones */
 
+td.actions-col {
+  display: table-cell;
+  white-space: nowrap;
+  width: 1%;
+  text-align: center;
+}
+
+td.actions-col .action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+td.actions-col form,
+.action-buttons form {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+td.actions-col .btn-icon,
+.action-buttons .btn-icon,
+td.actions-col button.btn-icon,
+.action-buttons button.btn-icon {
+  margin: 0 !important;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Logout más claro */
+.logout-btn:hover,
+.logout-btn:focus-visible {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+/* Login centrado */
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.login-shell .login-card {
+  width: 100%;
+}
+
+/* Tarjetas del inicio */
+.card-highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+/* En celular las tablas pueden desplazarse horizontalmente */
+.table-card {
+  overflow-x: auto;
+}

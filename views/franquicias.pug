@@ -5,9 +5,12 @@ block content
     .header-title
       h2 Franquicias
       p Gestiona las franquicias registradas y consulta sus datos.
+
+    //- Sacamos el role=admin ya que ahora tenemos JWT y el authMiddleware leyendo req.user.role, no necesitamos ensuciar las URLs
+    //- a(href="/franquicias/nuevo?role=admin", role="button", class="outline")
     a(href="/franquicias/nuevo", class="btn btn-primary btn-sm") + Nueva Franquicia
 
-  if franquicias.length === 0
+  if !franquicias || franquicias.length === 0
     section.card
       p No hay franquicias registradas.
   else
@@ -37,6 +40,7 @@ block content
                     svg(width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg")
                       path(d="M4 20H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round")
                       path(d="M14.5 4.5L19.5 9.5L9 20H4V15L14.5 4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+
                   form(action=`/franquicias/${franquicia._id}?_method=DELETE`, method="POST", onsubmit="return confirm('¿Estás seguro de eliminar esta franquicia?');")
                     button(type="submit", class="btn btn-icon btn-icon-danger", aria-label="Eliminar", title="Eliminar")
                       svg(width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg")
