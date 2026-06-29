@@ -128,6 +128,9 @@ Al iniciar la app se crea automáticamente un admin si no existe:
 - **password:** `1234`
 - **role:** `admin`
 
+
+
+
 Esta lógica está en `config/db.js`. La contraseña se guarda hasheada con `bcrypt`.
 
 ---
